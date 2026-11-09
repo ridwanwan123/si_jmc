@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Galeri JMC 2026</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;background:#F6F5F1}
+a{color:#0E0E10}a:hover{color:#1F5EFF}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; min-height: 100vh; background: #F6F5F1; color: #0E0E10; font-family: 'Inter', system-ui, sans-serif; font-size: 16px">
+
+  <!-- TOP BAR -->
+  <header style="border-bottom: 1px solid #DEDCD5">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 40px">
+      <a href="BerandaB.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none">
+        <img src="../assets/logo-ikon.png" alt="Logo JMC" style="width: 38px; height: 40px; object-fit: contain">
+        <span style="font-family: 'Archivo', sans-serif; font-stretch: 125%; font-weight: 900; font-size: 20px; letter-spacing: -0.5px">JMC</span>
+      </a>
+      <nav aria-label="Menu utama" style="display: flex; flex-wrap: wrap; gap: 4px 28px; flex: 1 1 auto; font-size: 15px; font-weight: 600">
+        <a href="BerandaB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Beranda</a>
+        <a href="KlasemenB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Klasemen</a>
+        <a href="CaborB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Cabor</a>
+        <a href="MadrasahB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Madrasah</a>
+        <a href="GaleriB.dc.html" style="padding: 10px 0; text-decoration: none; border-bottom: 2px solid #0E0E10">Galeri</a>
+      </nav>
+      <button type="button" aria-label="Pilih edisi" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid #0E0E10; background: transparent; color: #0E0E10; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; cursor: pointer">
+        2026
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 40px 24px 72px">
+
+    <!-- ===== DAFTAR ALBUM ===== -->
+    <sc-if value="{{modeDaftar}}" hint-placeholder-val="{{true}}">
+      <div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066; margin-bottom: 8px">JMC 2026 · DOKUMENTASI</div>
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px">
+          <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: clamp(32px, 4vw, 48px); line-height: 1; letter-spacing: -1px; text-transform: uppercase">Galeri</h1>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #5E6066">{{jumlahAlbum}} ALBUM</span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 0; border-top: 2px solid #0E0E10; border-bottom: 1px solid #DEDCD5; margin-bottom: 28px">
+          <sc-for list="{{caborOpts}}" as="c" hint-placeholder-count="8">
+            <sc-if value="{{c.active}}" hint-placeholder-val="{{false}}">
+              <button type="button" aria-pressed="true" onClick="{{c.pick}}" style="min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid #0E0E10; background: #0E0E10; color: #FFFFFF; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer">{{c.label}}</button>
+            </sc-if>
+            <sc-if value="{{c.inactive}}" hint-placeholder-val="{{true}}">
+              <button type="button" aria-pressed="false" onClick="{{c.pick}}" style="min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid #C9C7C0; background: transparent; color: #0E0E10; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer">{{c.label}}</button>
+            </sc-if>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 28px 20px">
+          <sc-for list="{{albums}}" as="a" hint-placeholder-count="6">
+            <button type="button" onClick="{{a.open}}" style="display: flex; flex-direction: column; gap: 12px; padding: 0; border: 0; background: transparent; color: #0E0E10; font-family: inherit; text-align: left; cursor: pointer">
+              <span style="position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: #E3E1DA">
+                <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #6B6D73">[FOTO SAMPUL]</span>
+                <span style="position: absolute; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: #0E0E10; color: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700">{{a.jumlah}} FOTO</span>
+              </span>
+              <span style="display: flex; flex-direction: column; gap: 4px">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #1F5EFF">{{a.caborUp}} · {{a.tanggal}}</span>
+                <span style="font-weight: 700; font-size: 17px">{{a.judul}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== ISI ALBUM ===== -->
+    <sc-if value="{{modeAlbum}}" hint-placeholder-val="{{false}}">
+      <div>
+        <button type="button" onClick="{{kembali}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #0E0E10; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>SEMUA ALBUM
+        </button>
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 12px 0 24px; padding-bottom: 20px; border-bottom: 2px solid #0E0E10">
+          <div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #1F5EFF">{{album.caborUp}} · {{album.tanggal}}</div>
+            <h1 style="margin: 6px 0 0; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: clamp(28px, 3.5vw, 40px); line-height: 1.05; letter-spacing: -0.5px; text-transform: uppercase">{{album.judul}}</h1>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #5E6066">{{album.jumlah}} FOTO</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px">
+          <sc-for list="{{fotos}}" as="f" hint-placeholder-count="8">
+            <button type="button" aria-label="Buka foto {{f.no}}" onClick="{{f.open}}" style="position: relative; display: block; aspect-ratio: 1 / 1; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: #E3E1DA; cursor: pointer">
+              <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #6B6D73">[FOTO {{f.no}}]</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+
+  <!-- ===== LIGHTBOX ===== -->
+  <sc-if value="{{modeFoto}}" hint-placeholder-val="{{false}}">
+    <div role="dialog" aria-label="Foto" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #0E0E10; color: #FFFFFF; display: flex; flex-direction: column; z-index: 10">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #B9BBC2">{{album.caborUp}} · {{posisi}}</span>
+        <button type="button" aria-label="Tutup" onClick="{{tutup}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid #3A3B41; border-radius: 999px; background: transparent; color: #FFFFFF; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 24px; min-height: 420px">
+        <button type="button" aria-label="Foto sebelumnya" onClick="{{prev}}" style="flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid #3A3B41; border-radius: 999px; background: transparent; color: #FFFFFF; cursor: pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <div style="flex: 1 1 auto; max-width: 960px; aspect-ratio: 3 / 2; border-radius: 6px; background: #26272C; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #8D9098">[FOTO {{nomorFoto}}]</div>
+        <button type="button" aria-label="Foto berikutnya" onClick="{{next}}" style="flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid #3A3B41; border-radius: 999px; background: transparent; color: #FFFFFF; cursor: pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <div style="padding: 20px 24px 28px; text-align: center">
+        <div style="font-weight: 700; font-size: 16px">{{album.judul}}</div>
+        <div style="margin-top: 4px; font-size: 14px; color: #B9BBC2">[Keterangan foto]</div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cabor: 'Semua', album: null, foto: null };
+  }
+  renderVals() {
+    const CABOR = ['Keagamaan', 'Sains', 'Olahraga', 'Seni', 'Riset', 'Robotik', 'GTK'];
+    const ALBUMS = [
+      { id: 1, judul: 'Upacara Pembukaan', cabor: 'Umum', tanggal: '[TGL]', jumlah: 24 },
+      { id: 2, judul: 'Tenis Meja MTs Putri', cabor: 'Olahraga', tanggal: '[TGL]', jumlah: 18 },
+      { id: 3, judul: 'MTQ MA Putra', cabor: 'Keagamaan', tanggal: '[TGL]', jumlah: 12 },
+      { id: 4, judul: 'Line Follower MA', cabor: 'Robotik', tanggal: '[TGL]', jumlah: 16 },
+      { id: 5, judul: 'Kaligrafi MI', cabor: 'Seni', tanggal: '[TGL]', jumlah: 10 },
+      { id: 6, judul: 'KSM Matematika MTs', cabor: 'Sains', tanggal: '[TGL]', jumlah: 8 },
+      { id: 7, judul: 'Karya Tulis Ilmiah MA', cabor: 'Riset', tanggal: '[TGL]', jumlah: 9 },
+      { id: 8, judul: 'Guru Inovatif', cabor: 'GTK', tanggal: '[TGL]', jumlah: 11 },
+      { id: 9, judul: 'Futsal MTs Putra', cabor: 'Olahraga', tanggal: '[TGL]', jumlah: 20 }
+    ];
+    const s = this.state;
+    const albums = ALBUMS
+      .filter((a) => s.cabor === 'Semua' || a.cabor === s.cabor)
+      .map((a) => ({ ...a, caborUp: a.cabor.toUpperCase(), open: () => this.setState({ album: a.id, foto: null }) }));
+    const sel = ALBUMS.find((a) => a.id === s.album);
+    const album = sel ? { ...sel, caborUp: sel.cabor.toUpperCase() } : { judul: '', caborUp: '', tanggal: '', jumlah: 0 };
+    const n = sel ? sel.jumlah : 0;
+    const fotos = [];
+    for (let i = 0; i < n; i++) fotos.push({ no: i + 1, open: () => this.setState({ foto: i }) });
+    return {
+      caborOpts: ['Semua'].concat(CABOR).map((c) => ({ label: c, active: s.cabor === c, inactive: s.cabor !== c, pick: () => this.setState({ cabor: c }) })),
+      albums,
+      jumlahAlbum: albums.length,
+      modeDaftar: !sel,
+      modeAlbum: !!sel,
+      modeFoto: !!sel && s.foto !== null,
+      album,
+      fotos,
+      nomorFoto: s.foto !== null ? s.foto + 1 : 0,
+      posisi: (s.foto !== null ? s.foto + 1 : 0) + ' / ' + n,
+      kembali: () => this.setState({ album: null, foto: null }),
+      tutup: () => this.setState({ foto: null }),
+      prev: () => this.setState({ foto: (s.foto - 1 + n) % n }),
+      next: () => this.setState({ foto: (s.foto + 1) % n })
+    };
+  }
+}
+</script>
+</body>
+</html>

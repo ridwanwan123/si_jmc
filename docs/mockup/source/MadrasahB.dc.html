@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Profil Madrasah JMC 2026</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;background:#F6F5F1}
+a{color:#0E0E10}a:hover{color:#1F5EFF}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 100vh; background: #F6F5F1; color: #0E0E10; font-family: 'Inter', system-ui, sans-serif; font-size: 16px">
+
+  <!-- TOP BAR -->
+  <header style="border-bottom: 1px solid #DEDCD5">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 40px">
+      <a href="BerandaB.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none">
+        <img src="../assets/logo-ikon.png" alt="Logo JMC" style="width: 38px; height: 40px; object-fit: contain">
+        <span style="font-family: 'Archivo', sans-serif; font-stretch: 125%; font-weight: 900; font-size: 20px; letter-spacing: -0.5px">JMC</span>
+      </a>
+      <nav aria-label="Menu utama" style="display: flex; flex-wrap: wrap; gap: 4px 28px; flex: 1 1 auto; font-size: 15px; font-weight: 600">
+        <a href="BerandaB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Beranda</a>
+        <a href="KlasemenB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Klasemen</a>
+        <a href="CaborB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Cabor</a>
+        <a href="MadrasahB.dc.html" style="padding: 10px 0; text-decoration: none; border-bottom: 2px solid #0E0E10">Madrasah</a>
+        <a href="GaleriB.dc.html" style="padding: 10px 0; text-decoration: none; color: #5E6066">Galeri</a>
+      </nav>
+      <button type="button" aria-label="Pilih edisi" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid #0E0E10; background: transparent; color: #0E0E10; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; cursor: pointer">
+        2026
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 32px 24px 72px">
+
+    <!-- BREADCRUMB + SWITCHER -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066">
+        <a href="KlasemenB.dc.html" style="color: #5E6066">MADRASAH</a> / {{m.namaUp}}
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <label for="pilih-madrasah" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066">LIHAT MADRASAH</label>
+        <select id="pilih-madrasah" onChange="{{onPilih}}" style="min-height: 44px; min-width: 220px; padding: 0 14px; border-radius: 10px; border: 1px solid #0E0E10; background: #FFFFFF; color: #0E0E10; font-family: inherit; font-weight: 600; font-size: 15px">
+          <sc-for list="{{opsi}}" as="o" hint-placeholder-count="10">
+            <option value="{{o.nama}}">{{o.nama}}</option>
+          </sc-for>
+        </select>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; padding-bottom: 28px; border-bottom: 2px solid #0E0E10">
+      <span style="flex: none; width: 88px; height: 88px; border-radius: 20px; background: #0E0E10; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 30px">{{m.inisial}}</span>
+      <div style="flex: 1 1 320px; min-width: 0">
+        <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: clamp(30px, 4vw, 44px); line-height: 1.05; letter-spacing: -1px; text-transform: uppercase">{{m.nama}}</h1>
+        <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px">
+          <span style="padding: 4px 10px; border-radius: 999px; background: #0E0E10; color: #FFFFFF; font-size: 13px; font-weight: 700">{{m.jenjang}}</span>
+          <span style="padding: 4px 10px; border-radius: 999px; border: 1px solid #C9C7C0; font-size: 13px; font-weight: 600">{{m.status}}</span>
+          <span style="padding: 4px 10px; border-radius: 999px; border: 1px solid #C9C7C0; font-size: 13px; font-weight: 600">{{m.wilayah}}</span>
+          <span style="padding: 4px 10px; border-radius: 999px; border: 1px solid #C9C7C0; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">NSM [NSM]</span>
+        </div>
+      </div>
+      <div style="flex: none; text-align: right">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066">PERINGKAT</div>
+        <div style="font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 56px; line-height: 1; color: #1F5EFF">{{m.rankLabel}}</div>
+        <div style="font-size: 13px; color: #5E6066">dari {{jumlahMadrasah}} madrasah</div>
+      </div>
+    </div>
+
+    <!-- MEDAL SUMMARY -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 28px">
+      <div style="padding: 18px 20px; background: #FFFFFF; border-top: 4px solid #E3AE2A; border-radius: 4px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066">EMAS</div>
+        <div style="margin-top: 6px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 40px; line-height: 1">{{m.e}}</div>
+      </div>
+      <div style="padding: 18px 20px; background: #FFFFFF; border-top: 4px solid #A8AFB9; border-radius: 4px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066">PERAK</div>
+        <div style="margin-top: 6px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 40px; line-height: 1">{{m.p}}</div>
+      </div>
+      <div style="padding: 18px 20px; background: #FFFFFF; border-top: 4px solid #B8692E; border-radius: 4px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #5E6066">PERUNGGU</div>
+        <div style="margin-top: 6px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 40px; line-height: 1">{{m.b}}</div>
+      </div>
+      <div style="padding: 18px 20px; background: #0E0E10; color: #FFFFFF; border-top: 4px solid #0E0E10; border-radius: 4px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #B9BBC2">TOTAL</div>
+        <div style="margin-top: 6px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 40px; line-height: 1">{{m.t}}</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 40px; margin-top: 48px; align-items: flex-start">
+
+      <!-- DAFTAR JUARA -->
+      <section style="flex: 999 1 560px; min-width: 0">
+        <h2 style="margin: 0 0 16px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 26px; letter-spacing: -0.5px; text-transform: uppercase">Daftar Juara</h2>
+        <div style="border-top: 2px solid #0E0E10">
+          <sc-for list="{{m.juara}}" as="j" hint-placeholder-count="6">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 14px 0; border-bottom: 1px solid #DEDCD5">
+              <span style="flex: none; width: 92px; display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: {{j.warna}}"></span>{{j.medali}}
+              </span>
+              <span style="flex: 1 1 220px; min-width: 0">
+                <span style="display: block; font-weight: 700; font-size: 16px">{{j.lomba}}</span>
+                <span style="display: block; font-size: 13px; color: #5E6066">[Nama peserta]</span>
+              </span>
+              <span style="flex: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #1F5EFF">{{j.cabor}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- SIDEBAR -->
+      <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 40px">
+        <section>
+          <h2 style="margin: 0 0 16px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 26px; letter-spacing: -0.5px; text-transform: uppercase">Per Cabor</h2>
+          <div style="border-top: 2px solid #0E0E10">
+            <sc-for list="{{m.rincian}}" as="d" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-bottom: 1px solid #DEDCD5">
+                <div style="display: flex; justify-content: space-between; gap: 8px">
+                  <span style="font-weight: 700">{{d.cabor}}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700">{{d.e}} · {{d.p}} · {{d.b}}</span>
+                </div>
+                <span style="display: flex; height: 8px">
+                  <span style="display: flex; gap: 2px; {{d.barW}}">
+                    <span style="height: 8px; background: #E3AE2A; {{d.eF}}"></span>
+                    <span style="height: 8px; background: #A8AFB9; {{d.pF}}"></span>
+                    <span style="height: 8px; background: #B8692E; {{d.bF}}"></span>
+                  </span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section>
+          <h2 style="margin: 0 0 16px; font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 800; font-size: 26px; letter-spacing: -0.5px; text-transform: uppercase">Riwayat</h2>
+          <div style="border-top: 2px solid #0E0E10; font-size: 15px">
+            <div style="display: grid; grid-template-columns: 72px minmax(0,1fr) 72px; gap: 8px; padding: 10px 0; border-bottom: 1px solid #DEDCD5; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #5E6066">
+              <span>EDISI</span><span>EMAS · PERAK · PRG</span><span style="text-align: right">RANK</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 72px minmax(0,1fr) 72px; gap: 8px; padding: 12px 0; border-bottom: 1px solid #DEDCD5; font-family: 'JetBrains Mono', monospace; font-weight: 700">
+              <span>2026</span><span>{{m.e}} · {{m.p}} · {{m.b}}</span><span style="text-align: right; color: #1F5EFF">{{m.rankLabel}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 72px minmax(0,1fr) 72px; gap: 8px; padding: 12px 0; border-bottom: 1px solid #DEDCD5; font-family: 'JetBrains Mono', monospace; color: #5E6066">
+              <span>2025</span><span>[N] · [N] · [N]</span><span style="text-align: right">[N]</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+    <p style="margin: 32px 0 0; font-size: 13px; color: #5E6066">Data contoh. Nama lomba untuk madrasah selain MTsN 3 Jakarta ditampilkan sebagai placeholder.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { pilih: 'MTsN 3 Jakarta' };
+  }
+  renderVals() {
+    const CABOR = ['Keagamaan', 'Sains', 'Olahraga', 'Seni', 'Riset', 'Robotik', 'GTK'];
+    const DATA = [
+      { nama: 'MTsN 3 Jakarta', jenjang: 'MTs', status: 'Negeri', wilayah: 'Jakarta Selatan', m: { Olahraga: [3,1,0], Sains: [1,2,1], Seni: [1,0,1] } },
+      { nama: 'MAN 4 Jakarta', jenjang: 'MA', status: 'Negeri', wilayah: 'Jakarta Selatan', m: { Keagamaan: [2,1,0], Sains: [2,0,1], Olahraga: [1,1,1], Riset: [1,0,0] } },
+      { nama: 'MIN 1 Jakarta', jenjang: 'MI', status: 'Negeri', wilayah: 'Jakarta Pusat', m: { Keagamaan: [2,1,1], Seni: [1,1,0], Sains: [1,0,1] } },
+      { nama: 'MAN 13 Jakarta', jenjang: 'MA', status: 'Negeri', wilayah: 'Jakarta Utara', m: { Robotik: [2,0,0], Riset: [1,1,1], Sains: [0,2,1] } },
+      { nama: 'MTsN 1 Jakarta', jenjang: 'MTs', status: 'Negeri', wilayah: 'Jakarta Pusat', m: { Keagamaan: [1,2,1], Olahraga: [1,1,2], GTK: [1,0,0] } },
+      { nama: 'MTs Al-Hikmah', jenjang: 'MTs', status: 'Swasta', wilayah: 'Jakarta Timur', m: { Seni: [2,1,0], Keagamaan: [0,1,1] } },
+      { nama: 'MAN 2 Jakarta', jenjang: 'MA', status: 'Negeri', wilayah: 'Jakarta Barat', m: { GTK: [1,1,0], Olahraga: [1,0,2], Seni: [0,1,1] } },
+      { nama: 'MI Al-Falah', jenjang: 'MI', status: 'Swasta', wilayah: 'Jakarta Timur', m: { Keagamaan: [1,1,2], Seni: [0,1,0] } },
+      { nama: 'MAN 1 Jakarta', jenjang: 'MA', status: 'Negeri', wilayah: 'Jakarta Pusat', m: { Riset: [0,2,0], Sains: [1,0,1] } },
+      { nama: 'MTs Darussalam', jenjang: 'MTs', status: 'Swasta', wilayah: 'Jakarta Barat', m: { Olahraga: [1,0,1], Robotik: [0,1,1] } },
+      { nama: 'MI Nurul Iman', jenjang: 'MI', status: 'Swasta', wilayah: 'Kepulauan Seribu', m: { Seni: [0,0,1], Sains: [0,1,0] } }
+    ];
+    const JUARA_MTSN3 = [
+      ['Emas', 'Tenis Meja Putri', 'Olahraga'], ['Emas', 'Futsal Putra', 'Olahraga'], ['Emas', 'Pencak Silat Putra', 'Olahraga'],
+      ['Emas', 'KSM Matematika', 'Sains'], ['Emas', 'Kaligrafi', 'Seni'],
+      ['Perak', 'Tenis Meja Putra', 'Olahraga'], ['Perak', 'KSM IPA', 'Sains'], ['Perak', 'KSM IPS', 'Sains'],
+      ['Perunggu', 'Cerdas Cermat Sains', 'Sains'], ['Perunggu', 'Baca Puisi', 'Seni']
+    ];
+    const WARNA = { Emas: '#E3AE2A', Perak: '#A8AFB9', Perunggu: '#B8692E' };
+    const cmp = (x, y) => y.e - x.e || y.p - x.p || y.b - x.b || x.nama.localeCompare(y.nama);
+    const sum = (d) => {
+      let e = 0, p = 0, b = 0;
+      CABOR.forEach((c) => { const v = d.m[c]; if (!v) return; e += v[0]; p += v[1]; b += v[2]; });
+      return { ...d, e, p, b, t: e + p + b };
+    };
+    let rows = DATA.map(sum).sort(cmp);
+    let rank = 0;
+    rows = rows.map((r, i) => {
+      const same = (a) => a && a.e === r.e && a.p === r.p && a.b === r.b;
+      if (!same(rows[i - 1])) rank = i + 1;
+      return { ...r, rankLabel: (same(rows[i - 1]) || same(rows[i + 1]) ? '=' : '') + String(rank).padStart(2, '0') };
+    });
+    const r = rows.find((x) => x.nama === this.state.pilih) || rows[0];
+    const fl = (n) => 'flex: ' + n + ' 0 0';
+    const rincian = CABOR.filter((c) => r.m[c]).map((c) => {
+      const v = r.m[c]; const t = v[0] + v[1] + v[2];
+      return { cabor: c, e: v[0], p: v[1], b: v[2], barW: 'width: ' + Math.round((t / 5) * 100) + '%', eF: fl(v[0]), pF: fl(v[1]), bF: fl(v[2]) };
+    });
+    let juara;
+    if (r.nama === 'MTsN 3 Jakarta') {
+      juara = JUARA_MTSN3.map((j) => ({ medali: j[0].toUpperCase(), warna: WARNA[j[0]], lomba: j[1], cabor: j[2].toUpperCase() }));
+    } else {
+      juara = [];
+      ['Emas', 'Perak', 'Perunggu'].forEach((md, idx) => {
+        CABOR.forEach((c) => {
+          const v = r.m[c];
+          if (!v) return;
+          for (let k = 0; k < v[idx]; k++) juara.push({ medali: md.toUpperCase(), warna: WARNA[md], lomba: '[Nama lomba ' + c + ']', cabor: c.toUpperCase() });
+        });
+      });
+    }
+    const inisial = r.nama.replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    return {
+      m: { ...r, namaUp: r.nama.toUpperCase(), inisial, rincian, juara },
+      jumlahMadrasah: rows.length,
+      opsi: DATA.map((d) => ({ nama: d.nama })),
+      onPilih: (ev) => this.setState({ pilih: ev && ev.target ? ev.target.value : 'MTsN 3 Jakarta' })
+    };
+  }
+}
+</script>
+</body>
+</html>

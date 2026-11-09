@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source "../**/*.blade.php";
+@source "../**/*.js";
+
+/*
+ * Token desain versi B (lihat CLAUDE.md, bagian Desain).
+ * Kelas yang dihasilkan: bg-bg, text-ink, text-muted, border-line, text-accent,
+ * bg-emas, bg-perak, bg-perunggu, bg-live, bg-podium-*, font-judul, font-mono, dst.
+ */
+@theme {
+    --color-bg: #F6F5F1;
+    --color-ink: #0E0E10;
+    --color-muted: #5E6066;
+    --color-line: #DEDCD5;
+    --color-accent: #1F5EFF;
+    --color-emas: #E3AE2A;
+    --color-perak: #A8AFB9;
+    --color-perunggu: #B8692E;
+    --color-live: #3DDC84;
+
+    --color-podium-emas: #E3AE2A;
+    --color-podium-perak: #C9CED6;
+    --color-podium-perunggu: #C98A55;
+
+    /* Warna pendukung dari mockup */
+    --color-teks-2: #3E4046;
+    --color-pill: #E7E5DF;
+    --color-pill-line: #C9C7C0;
+    --color-garis-halus: #ECEAE4;
+    --color-placeholder: #E3E1DA;
+    --color-accent-tua: #1648CC;
+    --color-sukses: #1F9D57;
+
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-judul: 'Archivo', 'Inter', ui-sans-serif, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-bg font-sans text-base text-ink antialiased;
+    }
+
+    a:hover {
+        color: var(--color-accent);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+/* Archivo lebar 110%, tebal 800, kapital — semua judul */
+@utility font-judul-tegas {
+    font-family: var(--font-judul);
+    font-stretch: 110%;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* Angka besar papan skor (podium, angka ringkas) */
+@utility font-angka {
+    font-family: var(--font-judul);
+    font-stretch: 125%;
+    font-weight: 800;
+    line-height: 1;
+}
+
+@utility judul-hero {
+    @apply font-judul-tegas;
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 0.98;
+    letter-spacing: -1.5px;
+}
+
+@utility judul-halaman {
+    @apply font-judul-tegas;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1;
+    letter-spacing: -1px;
+}
+
+@utility judul-seksi {
+    @apply font-judul-tegas;
+    font-size: 30px;
+    letter-spacing: -0.5px;
+}
+
+/* Label kecil monospace kapital */
+@utility label-mono {
+    @apply font-mono text-[13px] font-bold text-muted;
+}
+
+@utility wadah {
+    @apply mx-auto w-full max-w-[1240px] px-4 sm:px-6;
+}
