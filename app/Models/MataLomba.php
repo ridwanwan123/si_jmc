@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Master mata lomba: katalog lomba tetap, mis. "MTQ · MA · Putra" di cabor Keagamaan.
@@ -22,7 +21,7 @@ class MataLomba extends Model
     protected $table = 'mata_lomba';
 
     protected $fillable = [
-        'cabor_id', 'nama', 'jenjang', 'kategori', 'jumlah_anggota',
+        'cabor_id', 'pengelola_cabor_id', 'nama', 'jenjang', 'kategori', 'jumlah_anggota',
         'kuota_juara_1', 'kuota_juara_2', 'kuota_juara_3',
         'urutan', 'is_aktif',
     ];
@@ -41,6 +40,8 @@ class MataLomba extends Model
         return [
             'jenjang' => Jenjang::class,
             'kategori' => Kategori::class,
+            'cabor_id' => 'integer',
+            'pengelola_cabor_id' => 'integer',
             'jumlah_anggota' => 'integer',
             'kuota_juara_1' => 'integer',
             'kuota_juara_2' => 'integer',
@@ -79,38 +80,59 @@ class MataLomba extends Model
         return ($this->cabor?->nama ?? '?').' — '.$this->namaLengkap();
     }
 
-    /**
-     * Buat master dari lomba yang sudah ada (dipakai migration) dan hubungkan lomba lama.
-     * Aman dijalankan ulang.
-     */
-    public static function isiDariLombaLama(): void
+    protected static function booted(): void
     {
-        $kombinasi = DB::table('lomba')
-            ->select('cabor_id', 'nama', 'jenjang', 'kategori')
-            ->selectRaw('MIN(urutan) AS urutan, MIN(kuota_juara_1) AS k1, MIN(kuota_juara_2) AS k2, MIN(kuota_juara_3) AS k3')
-            ->groupBy('cabor_id', 'nama', 'jenjang', 'kategori')
-            ->get();
+        // Pengelola = cabor yang admin-nya mengurus mata lomba ini. Selain GTK selalu cabor sendiri;
+        // GTK boleh dikelola cabor lain (mis. Badminton GTK → Olahraga), kosong = tebak dari nama.
+        static::saving(function (MataLomba $m) {
+            if (! static::caborGtk($m->cabor_id)) {
+                $m->pengelola_cabor_id = $m->cabor_id;
+            } elseif (! $m->pengelola_cabor_id) {
+                $m->pengelola_cabor_id = static::tebakPengelolaGtk($m->nama) ?? $m->cabor_id;
+            }
+        });
 
-        foreach ($kombinasi as $k) {
-            $kunci = ['cabor_id' => $k->cabor_id, 'nama' => $k->nama, 'jenjang' => $k->jenjang, 'kategori' => $k->kategori];
+        // Pengelola menentukan siapa yang mengurus (bukan data historis): ikut diperbarui di semua lomba.
+        static::saved(function (MataLomba $m) {
+            if ($m->wasChanged('pengelola_cabor_id')) {
+                $m->lomba()->update(['pengelola_cabor_id' => $m->pengelola_cabor_id]);
+            }
+        });
+    }
 
-            $id = DB::table('mata_lomba')->where($kunci)->value('id') ?? DB::table('mata_lomba')->insertGetId($kunci + [
-                'kuota_juara_1' => $k->k1,
-                'kuota_juara_2' => $k->k2,
-                'kuota_juara_3' => $k->k3,
-                'urutan' => $k->urutan,
-                'is_aktif' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+    private static function caborGtk(?int $caborId): bool
+    {
+        return $caborId !== null && Cabor::query()->whereKey($caborId)->value('slug') === 'gtk';
+    }
 
-            DB::table('lomba')->where($kunci)->whereNull('mata_lomba_id')->update(['mata_lomba_id' => $id]);
-        }
+    /** Tebakan cabor pengelola untuk mata lomba GTK dari namanya; null jika tidak dikenali. */
+    public static function tebakPengelolaGtk(string $nama): ?int
+    {
+        $n = mb_strtolower($nama);
+        $slug = match (true) {
+            str_contains($n, 'badminton'), str_contains($n, 'bulu tangkis'), str_contains($n, 'tenis'),
+            str_contains($n, 'catur'), str_contains($n, 'futsal'), str_contains($n, 'voli') => 'olahraga',
+            str_contains($n, 'mtq'), str_contains($n, 'mhq'), str_contains($n, 'kultum'), str_contains($n, 'azan'),
+            str_contains($n, 'adzan'), str_contains($n, 'ceramah'), str_contains($n, 'khutbah') => 'keagamaan',
+            str_contains($n, 'riset'), str_contains($n, 'inovasi') => 'riset',
+            str_contains($n, 'dirigen'), str_contains($n, 'kaligrafi'), str_contains($n, 'nasyid'), str_contains($n, 'lukis') => 'seni',
+            str_contains($n, 'robot') => 'robotik',
+            str_contains($n, 'olimpiade'), str_contains($n, 'sains') => 'sains',
+            default => null,
+        };
+
+        return $slug ? Cabor::query()->where('slug', $slug)->value('id') : null;
     }
 
     public function cabor(): BelongsTo
     {
         return $this->belongsTo(Cabor::class);
+    }
+
+    /** Cabor yang admin-nya mengurus mata lomba ini. */
+    public function pengelola(): BelongsTo
+    {
+        return $this->belongsTo(Cabor::class, 'pengelola_cabor_id');
     }
 
     public function lomba(): HasMany

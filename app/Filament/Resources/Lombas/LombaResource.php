@@ -39,6 +39,12 @@ class LombaResource extends Resource
 {
     protected static ?string $model = Lomba::class;
 
+    /** Pengaturan lomba hanya untuk superadmin; admin cabor bekerja lewat halaman Kelola Cabor. */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaMaster();
+    }
+
     protected static ?string $slug = 'lomba';
 
     protected static ?string $modelLabel = 'lomba';
@@ -102,8 +108,8 @@ class LombaResource extends Resource
                             ->columnSpanFull()
                             ->schema([
                                 TextInput::make('jumlah_anggota')
-                                    ->label('Jumlah anggota')
-                                    ->helperText('1 = perorangan')
+                                    ->label('Maksimal anggota')
+                                    ->helperText('1 = perorangan; tim minimal kapten')
                                     ->integer()
                                     ->minValue(1)
                                     ->maxValue(30)
@@ -159,7 +165,7 @@ class LombaResource extends Resource
 
     public static function labelMadrasah(Madrasah $m): string
     {
-        return "{$m->nama} ({$m->jenjang->value} · {$m->nsm})";
+        return "{$m->nama} ({$m->jenjang->value} · NPSN {$m->npsn}".($m->kelurahan ? " · {$m->kelurahan}" : '').')';
     }
 
     public static function table(Table $table): Table

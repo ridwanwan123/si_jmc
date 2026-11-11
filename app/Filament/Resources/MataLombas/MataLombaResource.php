@@ -37,6 +37,12 @@ class MataLombaResource extends Resource
 {
     protected static ?string $model = MataLomba::class;
 
+    /** Master data hanya untuk superadmin. */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaMaster();
+    }
+
     protected static ?string $slug = 'mata-lomba';
 
     protected static ?string $modelLabel = 'mata lomba';
@@ -67,6 +73,14 @@ class MataLombaResource extends Resource
                             ->options(fn () => Cabor::query()->orderBy('urutan')->pluck('nama', 'id')->all())
                             ->required()
                             ->live(),
+                        // Lomba GTK diurus admin cabor lain, mis. Badminton GTK → admin Olahraga.
+                        // Medali tetap dihitung ke GTK. Kosong = ditebak dari nama lomba.
+                        Select::make('pengelola_cabor_id')
+                            ->label('Dikelola oleh admin cabor')
+                            ->options(fn () => Cabor::query()->orderBy('urutan')->pluck('nama', 'id')->all())
+                            ->placeholder('Otomatis dari nama lomba')
+                            ->helperText('Admin cabor ini yang memverifikasi peserta dan menginput juara. Medali tetap masuk cabor GTK.')
+                            ->visible(fn (Get $get) => Cabor::query()->whereKey($get('cabor_id'))->value('slug') === 'gtk'),
                         TextInput::make('nama')
                             ->label('Nama lomba')
                             ->placeholder('Tenis Meja')
@@ -89,8 +103,8 @@ class MataLombaResource extends Resource
                             ->required()
                             ->live(),
                         TextInput::make('jumlah_anggota')
-                            ->label('Jumlah anggota')
-                            ->helperText('1 = perorangan. Lebih dari 1 = tim, mis. Cerdas Cermat 3, Futsal 10.')
+                            ->label('Maksimal anggota')
+                            ->helperText('1 = perorangan. Lebih dari 1 = tim, mis. Cerdas Cermat 3, Basket 12. Madrasah boleh mendaftarkan kurang dari angka ini (minimal kapten).')
                             ->integer()
                             ->minValue(1)
                             ->maxValue(30)
@@ -123,10 +137,11 @@ class MataLombaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('cabor')->withCount('lomba')->terurut())
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['cabor', 'pengelola'])->withCount('lomba')->terurut())
             ->columns([
                 TextColumn::make('cabor.nama')
-                    ->label('Cabor'),
+                    ->label('Cabor')
+                    ->description(fn (MataLomba $r) => $r->pengelola_cabor_id !== $r->cabor_id ? 'Dikelola '.$r->pengelola?->nama : null),
                 TextColumn::make('nama')
                     ->label('Mata lomba')
                     ->searchable(query: fn (Builder $query, string $search) => $query->where('mata_lomba.nama', 'like', "%{$search}%")),

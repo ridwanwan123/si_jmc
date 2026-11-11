@@ -95,12 +95,12 @@
             <section x-show="langkah === 1" class="flex flex-col gap-4">
                 <div>
                     <h2 class="text-2xl font-extrabold">Pilih madrasah</h2>
-                    <p class="mt-1.5 text-[15px] text-muted">Cari nama madrasah atau NSM. Lomba yang muncul nanti menyesuaikan jenjang madrasah.</p>
+                    <p class="mt-1.5 text-[15px] text-muted">Cari nama madrasah atau NPSN. Lomba yang muncul nanti menyesuaikan jenjang madrasah.</p>
                 </div>
                 <label class="flex min-h-13 items-center gap-3 rounded-xl border border-ink bg-white px-4">
                     <x-ikon nama="cari" class="size-4.5 text-muted" />
                     <span class="sr-only">Cari madrasah</span>
-                    <input type="search" x-model="cari" placeholder="Ketik nama madrasah atau NSM…" autocomplete="off"
+                    <input type="search" x-model="cari" placeholder="Ketik nama madrasah atau NPSN…" autocomplete="off"
                            class="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-[#8A8C92]">
                 </label>
                 <div role="radiogroup" aria-label="Madrasah" class="flex flex-col gap-2.5">
@@ -111,7 +111,7 @@
                             <span class="flex size-10 flex-none items-center justify-center rounded-lg bg-ink font-judul text-[13px] font-extrabold text-white" x-text="m.jenjang"></span>
                             <span class="min-w-0 flex-1">
                                 <span class="block truncate text-base font-bold" x-text="m.nama"></span>
-                                <span class="block truncate text-[13px] text-teks-2" x-text="['NSM ' + m.nsm, m.status, m.wilayah].filter(Boolean).join(' · ')"></span>
+                                <span class="block truncate text-[13px] text-teks-2" x-text="['NPSN ' + m.npsn, m.status, m.kelurahan, m.kota].filter(Boolean).join(' · ')"></span>
                             </span>
                             <span class="flex size-6 flex-none items-center justify-center rounded-full border-2"
                                   :class="pilihan.madrasah === m.id ? 'border-accent bg-accent text-white' : 'border-[#8A8C92]'">
@@ -120,8 +120,8 @@
                         </button>
                     </template>
                     <p x-show="data.madrasah.length === 0" class="rounded-xl border border-line bg-white px-4 py-5 text-sm text-muted">Data madrasah belum tersedia. Silakan hubungi panitia.</p>
-                    <p x-show="data.madrasah.length > 0 && hasilCari().length === 0" class="rounded-xl border border-line bg-white px-4 py-5 text-sm text-muted">Madrasah tidak ditemukan. Coba kata lain atau periksa NSM.</p>
-                    <p x-show="sisaCari() > 0" class="text-[13px] text-muted" x-text="'+' + sisaCari() + ' madrasah lain. Ketik nama atau NSM untuk mempersempit.'"></p>
+                    <p x-show="data.madrasah.length > 0 && hasilCari().length === 0" class="rounded-xl border border-line bg-white px-4 py-5 text-sm text-muted">Madrasah tidak ditemukan. Coba kata lain atau periksa NPSN.</p>
+                    <p x-show="sisaCari() > 0" class="text-[13px] text-muted" x-text="'+' + sisaCari() + ' madrasah lain. Ketik nama atau NPSN untuk mempersempit.'"></p>
                 </div>
             </section>
 
@@ -175,7 +175,7 @@
                             <span class="flex flex-none items-center gap-1.5 text-sm font-semibold text-teks-2">
                                 <x-ikon nama="orang" class="size-4" stroke="1.8" x-show="l.anggota === 1" />
                                 <x-ikon nama="orang-dua" class="size-4" stroke="1.8" x-show="l.anggota > 1" />
-                                <span x-text="l.anggota > 1 ? 'Tim ' + l.anggota + ' orang' : 'Perorangan'"></span>
+                                <span x-text="l.anggota > 1 ? 'Tim maks. ' + l.anggota + ' orang' : 'Perorangan'"></span>
                             </span>
                         </button>
                     </template>
@@ -187,13 +187,13 @@
                 <div>
                     <h2 class="text-2xl font-extrabold">Data peserta</h2>
                     <p class="mt-1.5 text-[15px] text-muted"
-                       x-text="jumlahAnggota() > 1 ? 'Lomba ini tim beranggotakan tepat ' + jumlahAnggota() + ' orang. Isi data semua anggota.' : 'Lomba ini perorangan. Isi data satu peserta.'"></p>
+                       x-text="tim() ? 'Lomba tim, maksimal ' + jumlahAnggota() + ' orang. Isi minimal kapten tim; anggota lain ditambahkan sesuai kebutuhan. Anggota pertama adalah kapten.' : 'Lomba ini perorangan. Isi data satu peserta.'"></p>
                 </div>
 
                 <section aria-label="Peserta" class="overflow-hidden rounded-[14px] border border-line bg-white">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-garis-halus px-5 py-4">
-                        <span class="text-[17px] font-extrabold" x-text="jumlahAnggota() > 1 ? 'Anggota tim' : 'Peserta'"></span>
-                        <span class="font-mono text-xs font-bold text-accent" x-text="jumlahAnggota() + ' PESERTA'"></span>
+                        <span class="text-[17px] font-extrabold" x-text="tim() ? 'Anggota tim' : 'Peserta'"></span>
+                        <span class="font-mono text-xs font-bold text-accent" x-text="tim() ? peserta.length + ' / ' + jumlahAnggota() + ' ANGGOTA' : '1 PESERTA'"></span>
                     </div>
                     <div class="px-5 pb-1 pt-1.5">
                         <div aria-hidden="true" class="hidden gap-3 border-b border-garis-halus pb-1.5 pt-2.5 font-mono text-[11px] font-bold text-muted sm:flex">
@@ -203,21 +203,36 @@
                         </div>
                         <template x-for="(p, i) in peserta" :key="i">
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-garis-halus py-3 last:border-b-0 sm:flex-nowrap">
-                                <span class="w-full flex-none text-[15px] font-bold sm:w-24" x-text="'Peserta ' + (i + 1)"></span>
+                                <span class="w-full flex-none text-[15px] font-bold sm:w-24" x-text="labelPeserta(i)"></span>
                                 <label class="min-w-0 flex-[3_1_0]">
-                                    <span class="sr-only" x-text="'Nama lengkap peserta ' + (i + 1)"></span>
+                                    <span class="sr-only" x-text="'Nama lengkap ' + labelPeserta(i).toLowerCase()"></span>
                                     <input type="text" x-model.trim="p.nama" placeholder="Nama lengkap" autocomplete="off"
                                            :class="cobaLanjut && !p.nama ? 'border-red-600' : 'border-pill-line'"
                                            class="min-h-12 w-full rounded-lg border bg-white px-3.5 text-base outline-none focus:border-ink">
                                 </label>
                                 <label class="min-w-[150px] flex-[2_1_0]">
-                                    <span class="sr-only" x-text="labelNomor() + ' peserta ' + (i + 1)"></span>
+                                    <span class="sr-only" x-text="labelNomor() + ' ' + labelPeserta(i).toLowerCase()"></span>
                                     <input type="text" x-model.trim="p.nisn" :placeholder="gtk() ? 'NUPTK (16 digit)' : 'NISN (10 digit)'" inputmode="numeric" :maxlength="gtk() ? 16 : 10" autocomplete="off"
                                            :class="cobaLanjut && !nomorValid(p.nisn) ? 'border-red-600' : 'border-pill-line'"
                                            class="min-h-12 w-full rounded-lg border bg-white px-3.5 font-mono text-[15px] outline-none focus:border-ink">
                                 </label>
+                                <button type="button" x-show="tim()" @click="hapusAnggota(i)" :disabled="i === 0"
+                                        :aria-label="'Hapus ' + labelPeserta(i).toLowerCase()"
+                                        :class="i === 0 ? 'invisible' : ''"
+                                        class="grid size-11 flex-none place-items-center rounded-lg border border-pill-line text-muted hover:border-ink hover:text-ink">
+                                    <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                                </button>
                             </div>
                         </template>
+                        <div x-show="tim()" class="flex flex-wrap items-center justify-between gap-3 py-3">
+                            <button type="button" @click="tambahAnggota()" x-show="bisaTambahAnggota()"
+                                    class="inline-flex min-h-11 items-center gap-2 rounded-full border border-ink px-4 text-[15px] font-semibold text-ink">
+                                <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                Tambah anggota
+                            </button>
+                            <span x-show="!bisaTambahAnggota()" class="text-sm text-muted">Jumlah anggota sudah maksimal.</span>
+                            <span class="text-[13px] text-muted">Hanya kapten yang wajib diisi.</span>
+                        </div>
                     </div>
                 </section>
 

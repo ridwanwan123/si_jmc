@@ -9,9 +9,11 @@ use App\Filament\Resources\Pendaftarans\Pages\ViewPendaftaran;
 use App\Models\Cabor;
 use App\Models\Edisi;
 use App\Models\Pendaftaran;
+use App\Models\PendaftaranPeserta;
 use App\Services\PendaftaranService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
@@ -29,6 +31,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
 /**
@@ -61,6 +64,19 @@ class PendaftaranResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    /** Superadmin dan admin cabor (dibatasi ke lomba cabornya lewat getEloquentQuery). */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaLombaApaPun();
+    }
+
+    /** Admin cabor hanya melihat pendaftaran lomba yang ia kelola (termasuk lomba GTK yang dikelolanya). */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('lomba', fn (Builder $l) => $l->bolehDikelola(auth()->user()));
     }
 
     public static function getNavigationBadge(): ?string
@@ -96,29 +112,11 @@ class PendaftaranResource extends Resource
                     TextEntry::make('lomba.cabor.nama')->label('Cabor'),
                     TextEntry::make('lomba')->label('Mata lomba')
                         ->formatStateUsing(fn (Pendaftaran $record) => $record->lomba->namaLengkap()
-                            .' · '.($record->lomba->tim() ? "Tim {$record->lomba->jumlah_anggota} orang" : 'Perorangan')),
+                            .' · '.$record->lomba->labelAnggota()),
                     TextEntry::make('madrasah.nama')->label('Madrasah')
-                        ->formatStateUsing(fn (Pendaftaran $record) => "{$record->madrasah->nama} ({$record->madrasah->jenjang->value} · NSM {$record->madrasah->nsm})")
+                        ->formatStateUsing(fn (Pendaftaran $record) => "{$record->madrasah->nama} ({$record->madrasah->jenjang->value} · NPSN {$record->madrasah->npsn})")
                         ->columnSpan(2),
                     TextEntry::make('catatan')->label('Catatan panitia')->placeholder('—'),
-                ]),
-            Section::make(fn (Pendaftaran $record) => $record->lomba->tim() ? 'Anggota tim' : 'Peserta')
-                ->description(fn (Pendaftaran $record) => $record->peserta->count().' orang')
-                ->columnSpanFull()
-                ->schema([
-                    // Satu tabel ringkas: tetap rapi walau timnya 10 orang.
-                    RepeatableEntry::make('peserta')
-                        ->hiddenLabel()
-                        ->table([
-                            TableColumn::make('No')->width('64px'),
-                            TableColumn::make('Nama lengkap'),
-                            TableColumn::make('NISN / NUPTK')->width('220px'),
-                        ])
-                        ->schema([
-                            TextEntry::make('urutan')->formatStateUsing(fn ($state) => nomor((int) $state))->fontFamily('mono')->color('gray'),
-                            TextEntry::make('nama')->weight('medium'),
-                            TextEntry::make('nisn')->fontFamily('mono')->copyable()->copyMessage('Disalin'),
-                        ]),
                 ]),
             Section::make('Guru pendamping')
                 ->columns(3)
@@ -132,13 +130,34 @@ class PendaftaranResource extends Resource
                         ->formatStateUsing(fn ($state) => $state ? 'Terlampir (PDF)' : null)
                         ->placeholder('Tidak ada'),
                 ]),
+            Section::make(fn (Pendaftaran $record) => $record->lomba->tim() ? 'Anggota tim' : 'Peserta')
+                ->description(fn (Pendaftaran $record) => $record->lomba->tim()
+                    ? $record->peserta->count()." dari maks. {$record->lomba->jumlah_anggota} orang · anggota pertama = kapten"
+                    : '1 orang')
+                ->columnSpanFull()
+                ->schema([
+                    // Satu tabel ringkas: tetap rapi walau timnya 10 orang.
+                    RepeatableEntry::make('peserta')
+                        ->hiddenLabel()
+                        ->table([
+                            TableColumn::make('No')->width('64px'),
+                            TableColumn::make('Nama lengkap'),
+                            TableColumn::make('NISN / NUPTK')->width('220px'),
+                        ])
+                        ->schema([
+                            TextEntry::make('urutan')->formatStateUsing(fn ($state) => nomor((int) $state))->fontFamily('mono')->color('gray'),
+                            TextEntry::make('nama')->weight('medium')
+                                ->formatStateUsing(fn (string $state, PendaftaranPeserta $record) => $record->isKapten() ? "{$state} (Kapten)" : $state),
+                            TextEntry::make('nisn')->fontFamily('mono')->copyable()->copyMessage('Disalin'),
+                        ]),
+                ]),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['lomba.cabor', 'madrasah', 'peserta']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['lomba.cabor', 'madrasah']))
             ->defaultSort('created_at', 'desc')
             ->columns(static::kolom())
             ->filters([
@@ -152,6 +171,7 @@ class PendaftaranResource extends Resource
                 static::filterJenjang(),
             ])
             ->recordActions(static::aksiBaris())
+            ->recordActionsColumnLabel('Aksi')
             ->toolbarActions([static::verifikasiTerpilihAction()]);
     }
 
@@ -169,35 +189,28 @@ class PendaftaranResource extends Resource
                 ->weight('bold')
                 ->searchable()
                 ->sortable(),
-            TextColumn::make('madrasah.nama')
-                ->label('Madrasah')
-                ->description(fn (Pendaftaran $record) => $record->madrasah->jenjang->value.' · '.$record->madrasah->wilayah?->value)
-                ->searchable()
-                ->sortable(),
             TextColumn::make('lomba.nama')
                 ->label('Lomba')
                 ->formatStateUsing(fn (Pendaftaran $record) => $record->lomba->namaLengkap())
                 ->description(fn (Pendaftaran $record) => $tampilCabor ? $record->lomba->cabor->nama : null),
-            TextColumn::make('peserta.nama')
-                ->label('Peserta')
-                ->listWithLineBreaks()
-                ->limitList(3)
-                ->expandableLimitedList()
-                ->searchable(),
-            TextColumn::make('guru_nama')
-                ->label('Pendamping')
-                ->description(fn (Pendaftaran $record) => $record->guru_wa)
-                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('madrasah.nama')
+                ->label('Madrasah')
+                ->description(fn (Pendaftaran $record) => $record->madrasah->jenjang->value.' · '.$record->madrasah->kota?->value)
+                // Kotak "Cari" juga mencari nama/NISN peserta dan nama pendamping, walau kolomnya tidak tampil.
+                ->searchable(query: fn (Builder $query, string $search) => $query->where(fn (Builder $q) => $q
+                    ->whereHas('madrasah', fn (Builder $m) => $m->where('nama', 'like', "%{$search}%"))
+                    ->orWhereHas('peserta', fn (Builder $p) => $p->where('nama', 'like', "%{$search}%")->orWhere('nisn', 'like', "{$search}%"))
+                    ->orWhere('guru_nama', 'like', "%{$search}%")))
+                ->sortable(),
             TextColumn::make('status')
                 ->badge()
                 ->formatStateUsing(fn (StatusPendaftaran $state) => $state->label())
                 ->color(fn (StatusPendaftaran $state) => $state->warna())
                 ->sortable(),
             TextColumn::make('created_at')
-                ->label('Tanggal')
+                ->label('Tanggal daftar')
                 ->dateTime('d M Y · H:i', config('jmc.timezone'))
-                ->sortable()
-                ->toggleable(),
+                ->sortable(),
         ];
     }
 
@@ -218,13 +231,15 @@ class PendaftaranResource extends Resource
                 fn (Builder $q, $j) => $q->whereHas('lomba', fn (Builder $l) => $l->where('jenjang', $j))));
     }
 
-    /** @return array<Action> */
+    /** @return array<ActionGroup> Menu titik tiga: Lihat, Verifikasi, Tolak. */
     public static function aksiBaris(): array
     {
         return [
-            ViewAction::make()->url(fn (Pendaftaran $record) => static::getUrl('view', ['record' => $record])),
-            static::verifikasiAction(),
-            static::tolakAction(),
+            ActionGroup::make([
+                ViewAction::make()->url(fn (Pendaftaran $record) => static::getUrl('view', ['record' => $record])),
+                static::verifikasiAction(),
+                static::tolakAction(),
+            ])->tooltip('Aksi'),
         ];
     }
 
@@ -237,13 +252,20 @@ class PendaftaranResource extends Resource
             ->requiresConfirmation()
             ->action(function (Collection $records) {
                 $n = 0;
+                $dilewati = [];
                 foreach ($records as $r) {
                     if ($r->status !== StatusPendaftaran::Diverifikasi) {
-                        app(PendaftaranService::class)->verifikasi($r);
-                        $n++;
+                        try {
+                            app(PendaftaranService::class)->verifikasi($r);
+                            $n++;
+                        } catch (ValidationException) {
+                            $dilewati[] = $r->nomor; // sudah ada pendaftaran ulang yang aktif
+                        }
                     }
                 }
-                Notification::make()->title("{$n} pendaftaran diverifikasi")->success()->send();
+                Notification::make()->title("{$n} pendaftaran diverifikasi")
+                    ->body($dilewati ? 'Dilewati karena madrasah sudah mendaftar ulang: '.implode(', ', $dilewati) : null)
+                    ->success()->send();
             })
             ->deselectRecordsAfterCompletion();
     }
@@ -255,10 +277,17 @@ class PendaftaranResource extends Resource
             ->icon(Heroicon::OutlinedCheckBadge)
             ->color('success')
             ->hidden(fn (Pendaftaran $record) => $record->status === StatusPendaftaran::Diverifikasi)
+            ->authorize(fn (Pendaftaran $record) => (bool) auth()->user()?->bolehKelolaLomba($record->lomba))
             ->requiresConfirmation()
             ->modalDescription(fn (Pendaftaran $record) => "Data peserta dan surat tugas {$record->madrasah->nama} sudah dicek dan sesuai?")
             ->action(function (Pendaftaran $record) {
-                app(PendaftaranService::class)->verifikasi($record);
+                try {
+                    app(PendaftaranService::class)->verifikasi($record);
+                } catch (ValidationException $e) {
+                    Notification::make()->title('Tidak bisa diverifikasi')->body(collect($e->errors())->flatten()->first())->danger()->send();
+
+                    return;
+                }
                 Notification::make()->title("{$record->nomor} diverifikasi")->success()->send();
             });
     }
@@ -270,6 +299,7 @@ class PendaftaranResource extends Resource
             ->icon(Heroicon::OutlinedXCircle)
             ->color('danger')
             ->hidden(fn (Pendaftaran $record) => $record->status === StatusPendaftaran::Ditolak)
+            ->authorize(fn (Pendaftaran $record) => (bool) auth()->user()?->bolehKelolaLomba($record->lomba))
             ->schema([
                 Textarea::make('catatan')
                     ->label('Alasan penolakan')

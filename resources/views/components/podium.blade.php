@@ -18,7 +18,7 @@
         <div class="flex min-w-0 flex-col gap-2.5 {{ $besar ? 'items-center gap-3 text-center' : '' }}">
             @if ($b)
                 <div class="min-w-0">
-                    <a href="{{ rute('madrasah.show', $b->nsm) }}" class="block font-extrabold leading-tight text-ink {{ $besar ? 'text-[17px]' : 'text-[15px]' }}">{{ $b->nama }}</a>
+                    <a href="{{ rute('madrasah.show', $b->npsn) }}" class="block font-extrabold leading-tight text-ink {{ $besar ? 'text-[17px]' : 'text-[15px]' }}">{{ $b->nama }}</a>
                     @if ($besar)
                         <div class="mt-1 font-mono text-xs font-bold text-muted">{{ $b->emas }} EMAS · {{ $b->total() }} TOTAL</div>
                     @else

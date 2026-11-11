@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // superadmin / admin_cabor / admin_berita. cabor_id hanya untuk admin_cabor (FK di migration cabor).
+            $table->string('role', 20)->default('superadmin');
+            $table->unsignedBigInteger('cabor_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

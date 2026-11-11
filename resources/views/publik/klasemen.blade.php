@@ -75,7 +75,7 @@
                                 <span class="font-mono text-xl font-bold">{{ $b->labelPeringkat() }}</span>
                                 <span class="min-w-0">
                                     <span class="block truncate text-[17px] font-extrabold">{{ $b->nama }}</span>
-                                    <span class="block text-[13px] text-muted">{{ $b->jenjang->value }} · {{ $b->status }} · {{ $b->wilayah }}</span>
+                                    <span class="block text-[13px] text-muted">{{ $b->jenjang->value }} · {{ $b->status }} · {{ $b->kota }}</span>
                                 </span>
                                 <x-batang-medali :emas="$b->emas" :perak="$b->perak" :perunggu="$b->perunggu" :maks="$maks" />
                                 <span class="text-center font-mono text-[17px] font-bold">{{ $b->emas }}</span>
@@ -104,7 +104,7 @@
                                     </div>
                                 @endforeach
                                 <div class="pl-[68px] pt-2 sm:pl-[84px]">
-                                    <a href="{{ rute('madrasah.show', $b->nsm) }}" class="text-sm font-bold text-accent underline">Profil madrasah &amp; daftar juara →</a>
+                                    <a href="{{ rute('madrasah.show', $b->npsn) }}" class="text-sm font-bold text-accent underline">Profil madrasah &amp; daftar juara →</a>
                                 </div>
                             </div>
                         </div>
@@ -161,10 +161,10 @@
                             <div class="border-t-2 border-ink">
                                 @forelse ($hasilCari['madrasah'] as $m)
                                     @php $bk = $klasemenUmum->get($m->id); @endphp
-                                    <a href="{{ rute('madrasah.show', $m->nsm) }}" class="flex min-h-14 items-center justify-between gap-4 border-b border-line py-3 text-ink no-underline">
+                                    <a href="{{ rute('madrasah.show', $m->npsn) }}" class="flex min-h-14 items-center justify-between gap-4 border-b border-line py-3 text-ink no-underline">
                                         <span class="min-w-0">
                                             <span class="block font-bold">{{ $m->nama }}</span>
-                                            <span class="block text-[13px] text-muted">{{ $m->jenjang->value }} · {{ $m->wilayah->value }}</span>
+                                            <span class="block text-[13px] text-muted">{{ $m->jenjang->value }} · {{ $m->kota->value }}</span>
                                         </span>
                                         <span class="shrink-0 font-mono text-sm font-bold">
                                             @if ($bk)
@@ -192,7 +192,7 @@
                                             <span class="block font-bold">{{ $h->nama_peserta }}</span>
                                             <span class="block text-[13px] text-muted">
                                                 {{ $h->lomba->namaLengkap() }} ·
-                                                <a href="{{ rute('madrasah.show', $h->madrasah->nsm) }}" class="text-muted underline">{{ $h->madrasah->nama }}</a>
+                                                <a href="{{ rute('madrasah.show', $h->madrasah->npsn) }}" class="text-muted underline">{{ $h->madrasah->nama }}</a>
                                             </span>
                                         </span>
                                         <span class="shrink-0 font-mono text-xs font-bold uppercase text-accent">{{ $h->lomba->cabor->nama }}</span>

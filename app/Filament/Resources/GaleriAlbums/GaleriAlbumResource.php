@@ -38,6 +38,12 @@ class GaleriAlbumResource extends Resource
 {
     protected static ?string $model = GaleriAlbum::class;
 
+    /** Galeri: superadmin dan admin berita. */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaBerita();
+    }
+
     protected static ?string $slug = 'galeri';
 
     protected static ?string $modelLabel = 'album';
@@ -48,7 +54,7 @@ class GaleriAlbumResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Lainnya';
+    protected static string|UnitEnum|null $navigationGroup = 'Publikasi';
 
     protected static ?int $navigationSort = 2;
 

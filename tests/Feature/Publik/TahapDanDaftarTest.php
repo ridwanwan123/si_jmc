@@ -14,7 +14,7 @@ beforeEach(function () {
     $this->withoutVite();
     $this->seed(CaborSeeder::class);
     $this->keagamaan = Cabor::where('slug', 'keagamaan')->first();
-    $this->mtsn3 = Madrasah::factory()->jenjang(Jenjang::MTs)->create(['nama' => 'MTsN 3 Jakarta', 'nsm' => '121131710003']);
+    $this->mtsn3 = Madrasah::factory()->jenjang(Jenjang::MTs)->create(['nama' => 'MTsN 3 Jakarta', 'npsn' => '121131710003']);
 });
 
 afterEach(fn () => Carbon::setTestNow());

@@ -5,8 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 
 /**
- * Data awal yang wajib ada: 7 cabor dan akun admin.
- * Edisi, mata lomba, madrasah, lomba, hasil, dan galeri diisi lewat panel admin.
+ * Data awal: 7 cabor, akun superadmin, madrasah DKI Jakarta, katalog 92 mata lomba,
+ * dan edisi aktif JMC 2026 beserta lombanya.
+ * Data contoh (juara, pendaftaran, berita) terpisah: php artisan db:seed --class=DemoJmcSeeder
  */
 class DatabaseSeeder extends Seeder
 {
@@ -15,6 +16,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CaborSeeder::class,
             AdminSeeder::class,
+            MadrasahSeeder::class,
+            MataLombaSeeder::class,
+            EdisiSeeder::class,
         ]);
     }
 }

@@ -21,7 +21,7 @@ Mockup desain (versi B, terpilih) ada di **`docs/mockup/`**: Beranda, Klasemen M
 
 - Bahasa UI: **Indonesia**. Nama tabel dan kolom: bahasa Indonesia, `snake_case`.
 - Validasi pakai **Form Request** (publik) atau validasi bawaan Filament (admin).
-- **Jangan ubah migration yang sudah dijalankan.** Buat migration baru untuk perubahan.
+- **Migration**: selama tahap development (belum ada data production), perubahan skema langsung diubah di file `create_*` lalu `migrate:fresh --seed`; tidak ada migration "ubah/hapus/add to". Setelah production, **jangan ubah migration yang sudah dijalankan**: buat migration baru.
 - Selalu eager load relasi di halaman list (hindari N+1).
 - Logika klasemen ada di **satu tempat**: `app/Services/KlasemenService.php`. Controller dan Filament memanggil service ini, jangan menghitung ulang sendiri-sendiri.
 - Setiap fitur baru disertai **feature test** (Pest atau PHPUnit), terutama untuk perhitungan klasemen.
@@ -58,15 +58,16 @@ Edisi (JMC 2026, 2027, ...)
 
 | Tabel          | Kolom penting                                                                                                                                                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `edisi`        | `id`, `tahun` (unik), `nama`, `tanggal_mulai`, `tanggal_selesai`, `lokasi`, `jumlah_madrasah_peserta` (int, input manual), `is_aktif` (bool, hanya satu yang true)                                                                                                       |
+| `edisi`        | `id`, `tahun` (unik), `nama`, `tanggal_mulai`, `tanggal_selesai`, `lokasi`, `pendaftaran_buka`, `pendaftaran_tutup`, `is_aktif` (bool, hanya satu yang true)                                                                                                       |
 | `cabor`        | `id`, `nama`, `slug`, `ikon` (nama ikon), `urutan`                                                                                                                                                                                                                       |
-| `madrasah`     | `id`, `nsm` (unik), `nama`, `jenjang` (enum RA/MI/MTs/MA), `status` (Negeri/Swasta), `wilayah` (Jakarta Pusat/Utara/Barat/Selatan/Timur/Kepulauan Seribu), `logo` (nullable)                                                                                             |
-| `mata_lomba`   | `id`, `cabor_id`, `nama`, `jenjang` (enum), `kategori` (enum), `kuota_juara_1/2/3` (default 1/2/3), `urutan`, `is_aktif`. Unik per (`cabor_id`, `nama`, `jenjang`, `kategori`)                                                                                         |
-| `lomba`        | `id`, `edisi_id`, `cabor_id`, `mata_lomba_id`, `nama`, `jenjang` (enum), `kategori` (enum Putra/Putri/Umum/Beregu), `kuota_juara_1` (default 1), `kuota_juara_2` (default 2), `kuota_juara_3` (default 3), `urutan`. Unik per (`edisi_id`, `mata_lomba_id`); nama/jenjang/kategori/cabor = snapshot dari master |
+| `madrasah`     | `id`, `npsn` (unik, wajib), `nama`, `jenjang` (enum RA/MI/MTs/MA), `status` (Negeri/Swasta), `logo` (nullable), `provinsi`, `kota` (enum Jakarta Pusat/Utara/Barat/Selatan/Timur/Kepulauan Seribu), `kecamatan`, `kelurahan`, `alamat_sekolah` (alamat nullable). Data awal: `MadrasahSeeder` dari `database/seeders/data/madrasah.sql` (sumber si_presma) |
+| `mata_lomba`   | `id`, `cabor_id`, `pengelola_cabor_id` (cabor yang admin-nya mengurus; = cabor_id kecuali GTK), `nama`, `jenjang` (enum), `kategori` (enum), `kuota_juara_1/2/3` (default 1/2/3), `urutan`, `is_aktif`. Unik per (`cabor_id`, `nama`, `jenjang`, `kategori`)                                                                                         |
+| `lomba`        | `id`, `edisi_id`, `cabor_id`, `pengelola_cabor_id` (snapshot dari master), `mata_lomba_id`, `nama`, `jenjang` (enum), `kategori` (enum Putra/Putri/Umum/Beregu), `kuota_juara_1` (default 1), `kuota_juara_2` (default 2), `kuota_juara_3` (default 3), `urutan`. Unik per (`edisi_id`, `mata_lomba_id`); nama/jenjang/kategori/cabor = snapshot dari master |
 | `hasil`        | `id`, `lomba_id`, `peringkat` (1/2/3), `madrasah_id`, `nama_peserta` (nullable), `urutan` (urutan tampil dalam peringkat yang sama), timestamps. **Tidak unique per peringkat**: satu lomba bisa punya beberapa baris dengan peringkat sama, maksimal sesuai kuota lomba |
 | `galeri_album` | `id`, `edisi_id`, `cabor_id` (nullable = umum, mis. pembukaan), `lomba_id` (nullable), `judul`, `slug`, `tanggal`, `sampul_foto_id` (nullable)                                                                                                                           |
 | `galeri_foto`  | `id`, `album_id`, `path`, `thumb_path`, `keterangan` (nullable), `urutan`                                                                                                                                                                                                |
-| `users`        | admin saja (1 role)                                                                                                                                                                                                                                                      |
+| `berita`       | `id`, `edisi_id`, `cabor_id` (nullable, untuk ikon placeholder), `kategori` (pengumuman/liputan/hasil), `judul`, `slug` (unik), `ringkasan`, `isi` (HTML; ditampilkan lewat `Berita::isiAman()`), `sampul`, `keterangan_sampul`, `penulis` (kosong = "Panitia {edisi}"), `tag` (json), `unggulan`, `sematkan_di_pita`, `terbit_pada` (NULL = draf; masa depan = terjadwal). Query publik di `BeritaService`. Contoh: `BeritaContohSeeder` |
+| `users`        | `role` (superadmin / admin_cabor / admin_berita), `cabor_id` (wajib untuk admin_cabor). Aturan akses di `User::boleh...()` |
 
 Catatan:
 
@@ -102,6 +103,7 @@ ORDER BY emas DESC, perak DESC, perunggu DESC, m.nama ASC;
 - **Filter**: cabor (berdasarkan cabor lomba) dan jenjang (berdasarkan jenjang madrasah). Peringkat dihitung ulang sesuai filter.
 - **Rincian per cabor** untuk tiap madrasah tersedia dari service yang sama (dipakai di baris klasemen yang dibuka dan di profil madrasah).
 - **Pemuncak cabor** = peringkat 1 klasemen dengan filter cabor tersebut.
+- **Jumlah madrasah peserta** (angka ringkas beranda, arsip, dashboard) tidak diinput: dihitung `KlasemenService::jumlahMadrasahPeserta()` = madrasah berbeda yang punya pendaftaran **diverifikasi** di edisi itu atau punya juara di edisi itu.
 - **Terakhir diperbarui** = `MAX(hasil.updated_at)` untuk lomba di edisi itu, format `05.11.2026 · 11:30 WIB` (timezone `Asia/Jakarta`).
 
 Query klasemen di atas tetap benar untuk juara ganda, karena setiap baris `hasil` dihitung sebagai 1 medali.
@@ -117,21 +119,37 @@ Wajib ada test untuk: urutan peringkat, peringkat sama (`=`), filter cabor, filt
 | `/`                               | Beranda         | Hero, podium 1-2-3, ticker hasil terbaru, angka ringkas, klasemen top 5, daftar cabor + mata lomba di tiap cabor (nama lomba + jenjang; pemuncak tidak ditampilkan), galeri pilihan                                                                                                    |
 | `/klasemen`                       | Klasemen Medali | Tab: Klasemen / Peraih Medali / Pencarian. Podium, filter jenjang + cabor, baris bisa dibuka untuk rincian per cabor                                                                                                  |
 | `/cabor` dan `/cabor/{slug}`      | Cabor & Lomba   | Daftar cabor 01–07 di kiri; lomba dikelompokkan per jenjang (RA/MI/MTs/MA), tiap lomba menampilkan semua juaranya (dikelompokkan emas → perak → perunggu, bisa lebih dari satu nama per medali) atau "Menunggu hasil" |
-| `/madrasah` dan `/madrasah/{nsm}` | Profil Madrasah | Peringkat, total medali, daftar juara (lomba + peserta + cabor), rincian per cabor, riwayat antar-edisi                                                                                                               |
+| `/madrasah` dan `/madrasah/{npsn}` | Profil Madrasah | Peringkat, total medali, daftar juara (lomba + peserta + cabor), rincian per cabor, riwayat antar-edisi                                                                                                               |
+| `/berita` dan `/berita/{slug}`    | Berita          | Pita pengumuman tersemat, filter kategori, berita unggulan, grid terbaru (muat +6), kolom pengumuman + ajakan daftar; detail: meta, menit baca, bagikan WA/salin tautan, isi, tag, berita lainnya. Beranda: unggulan + 3 terbaru |
 | `/galeri` dan `/galeri/{slug}`    | Galeri          | Album per cabor (filter), grid foto, lightbox                                                                                                                                                                         |
 
 - Pilihan edisi lewat query `?edisi=2025`; tanpa parameter = edisi aktif.
 - Interaksi (tab, filter, buka baris, lightbox) pakai **Alpine.js** atau query string, tanpa reload yang tidak perlu.
 - Pencarian: cari di `madrasah.nama` dan `hasil.nama_peserta`.
 
-## Panel admin (Filament, 1 role)
+## Panel admin (Filament)
+
+### Role
+
+| Role | Akses |
+| ---- | ----- |
+| **Superadmin** | Semua: master (edisi, madrasah, cabor, mata lomba, lomba), semua cabor, berita, galeri, **Pengguna** |
+| **Admin cabor** | Hanya halaman **Kelola Cabor** miliknya (`users.cabor_id`): lomba, input juara, verifikasi pendaftaran. Tidak bisa ubah pengaturan/hapus lomba |
+| **Admin berita** | Berita dan galeri |
+
+- **Lomba GTK** tidak punya admin khusus: tiap mata lomba GTK punya `pengelola_cabor_id` (mis. Badminton GTK → Olahraga, MTQ GTK → Keagamaan; ditebak dari nama lewat `MataLomba::tebakPengelolaGtk`, bisa diubah superadmin). Admin cabor pengelola melihatnya di halaman cabornya (`Lomba::untukCabor`), tapi **medalinya tetap dihitung ke cabor GTK**.
+- Pembatasan dijaga di `canAccess()` resource/halaman, query (`Lomba::bolehDikelola`, `PendaftaranResource::getEloquentQuery`), dan aksi (`authorize`). Wajib ada test per role (`tests/Feature/Admin/RoleTest.php`).
+
+### Menu
 
 - **Edisi**: CRUD, tandai edisi aktif.
-- **Madrasah**: CRUD + **import Excel** (kolom: NSM, nama, jenjang, status, wilayah).
+- **Madrasah**: CRUD + **import Excel** (kolom: NPSN, nama, jenjang, status, provinsi, kota, kecamatan, kelurahan, alamat; kota menerima juga format Kemenag "KOTA ADM. JAKARTA TIMUR").
 - **Master → Cabor**: ubah nama, ikon, urutan; tambah cabor (hapus hanya jika belum dipakai).
 - **Master → Mata Lomba**: CRUD katalog lomba + aktif/nonaktif + import Excel (kolom: cabor, nama, jenjang, kategori, kuota juara 1/2/3 — kosong = default 1/2/3).
 - **Lomba**: per edisi, dipilih dari master mata lomba (form: pilih mata lomba; aksi "Tambah dari master" untuk banyak sekaligus; "Salin dari edisi lain"; import Excel yang setiap barisnya harus cocok dengan master — kuota kosong = kuota master).
-- **Input hasil**: di halaman edit lomba, tiga bagian Juara 1 / Juara 2 / Juara 3. Tiap bagian berupa repeater (pilih madrasah via searchable select + nama peserta), jumlah baris maksimal = kuota peringkat itu. Juga import Excel dengan format **satu baris per juara** (kolom: cabor, lomba, jenjang, kategori, peringkat, NSM madrasah, nama peserta).
+- **Input hasil**: di halaman edit lomba, tiga bagian Juara 1 / Juara 2 / Juara 3. Tiap bagian berupa repeater (pilih madrasah via searchable select + nama peserta), jumlah baris maksimal = kuota peringkat itu. Juga import Excel dengan format **satu baris per juara** (kolom: cabor, lomba, jenjang, kategori, peringkat, NPSN madrasah, nama peserta).
+- **Berita** (Publikasi): tulis (editor kaya, sampul dikompres WebP maks 1600px), status draf/terjadwal/terbit lewat `terbit_pada`, aksi Terbitkan sekarang / Jadikan draf / Jadikan unggulan / Sematkan di pita / Lihat di web. Unggulan dan pita masing-masing **satu per edisi** (otomatis melepas yang lama).
+- **Pengguna** (superadmin): kelola akun dan role.
 - **Galeri**: buat album (pilih cabor/lomba), upload foto banyak sekaligus; otomatis kompres (maks lebar 1920px) dan buat thumbnail (lebar 600px), format WebP.
 - Validasi input hasil: madrasah wajib ada; jumlah juara per peringkat tidak melebihi kuota lomba.
 
@@ -200,6 +218,7 @@ Ukuran (desktop):
 ## Urutan pengerjaan
 
 1. Migration, model, relasi, seeder 7 cabor + edisi contoh.
+   Migration masih tahap development: perubahan skema langsung di file `create_*` lalu `php artisan migrate:fresh --seed` (`DatabaseSeeder` = cabor, superadmin, 1.815 madrasah, 92 mata lomba, edisi JMC 2026 + lombanya). Data demo (juara semua lomba dari pendaftaran terverifikasi + berita): `php artisan db:seed --class=DemoJmcSeeder`.
 2. `KlasemenService` + test-nya.
 3. Panel admin Filament (edisi, madrasah, lomba + input hasil, import Excel).
 4. Layout publik (navbar, footer, token warna, font) + halaman Klasemen.

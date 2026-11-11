@@ -18,9 +18,9 @@ beforeEach(function () {
     $this->olahraga = Cabor::where('slug', 'olahraga')->first();
     $this->sains = Cabor::where('slug', 'sains')->first();
 
-    $this->man4 = Madrasah::factory()->jenjang(Jenjang::MA)->create(['nama' => 'MAN 4 Jakarta', 'nsm' => '131131710004']);
-    $this->mtsn3 = Madrasah::factory()->jenjang(Jenjang::MTs)->create(['nama' => 'MTsN 3 Jakarta', 'nsm' => '121131710003']);
-    $this->min1 = Madrasah::factory()->jenjang(Jenjang::MI)->create(['nama' => 'MIN 1 Jakarta', 'nsm' => '111131710001']);
+    $this->man4 = Madrasah::factory()->jenjang(Jenjang::MA)->create(['nama' => 'MAN 4 Jakarta', 'npsn' => '131131710004']);
+    $this->mtsn3 = Madrasah::factory()->jenjang(Jenjang::MTs)->create(['nama' => 'MTsN 3 Jakarta', 'npsn' => '121131710003']);
+    $this->min1 = Madrasah::factory()->jenjang(Jenjang::MI)->create(['nama' => 'MIN 1 Jakarta', 'npsn' => '111131710001']);
 
     $this->tenisMeja = Lomba::factory()->for($this->edisi)->for($this->olahraga)->create(['nama' => 'Tenis Meja', 'jenjang' => 'MTs', 'kategori' => 'Putri']);
     $this->ksm = Lomba::factory()->for($this->edisi)->for($this->sains)->create(['nama' => 'KSM Matematika', 'jenjang' => 'MA', 'kategori' => 'Umum']);
@@ -207,7 +207,7 @@ describe('madrasah', function () {
 
         $this->get('/madrasah/131131710004')->assertOk()
             ->assertSee('MAN 4 Jakarta')
-            ->assertSee('NSM 131131710004')
+            ->assertSee('NPSN 131131710004')
             ->assertSee('dari 3 madrasah')
             ->assertSeeInOrder(['KSM Matematika', 'Ahmad Fauzi', 'Tenis Meja', 'Ani', 'Tenis Meja', 'Dewi'])
             ->assertSee('Per Cabor')
@@ -215,12 +215,12 @@ describe('madrasah', function () {
     });
 
     it('menampilkan profil madrasah tanpa medali', function () {
-        $m = Madrasah::factory()->create(['nsm' => '999']);
+        $m = Madrasah::factory()->create(['npsn' => '999']);
 
         $this->get('/madrasah/999')->assertOk()->assertSee('Belum meraih medali');
     });
 
-    it('menampilkan 404 untuk NSM yang tidak ada', function () {
+    it('menampilkan 404 untuk NPSN yang tidak ada', function () {
         $this->get('/madrasah/000')->assertNotFound();
     });
 });

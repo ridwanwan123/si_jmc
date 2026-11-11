@@ -28,6 +28,12 @@ class CaborResource extends Resource
 {
     protected static ?string $model = Cabor::class;
 
+    /** Master data hanya untuk superadmin. */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaMaster();
+    }
+
     protected static ?string $slug = 'cabor';
 
     protected static ?string $modelLabel = 'cabor';

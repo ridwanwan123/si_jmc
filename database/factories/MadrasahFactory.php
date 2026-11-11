@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\Jenjang;
 use App\Enums\StatusMadrasah;
-use App\Enums\Wilayah;
+use App\Enums\Kota;
 use App\Models\Madrasah;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,11 +20,15 @@ class MadrasahFactory extends Factory
         $prefix = $status === StatusMadrasah::Negeri ? "{$jenjang->value}N" : "{$jenjang->value}S";
 
         return [
-            'nsm' => (string) $this->faker->unique()->numerify('1############'),
+            'npsn' => (string) $this->faker->unique()->numerify('6#######'),
             'nama' => "{$prefix} ".$this->faker->unique()->numberBetween(1, 99999).' Jakarta',
             'jenjang' => $jenjang,
             'status' => $status,
-            'wilayah' => $this->faker->randomElement(Wilayah::cases()),
+            'provinsi' => 'DKI Jakarta',
+            'kota' => $this->faker->randomElement(Kota::cases()),
+            'kecamatan' => null,
+            'kelurahan' => null,
+            'alamat_sekolah' => null,
             'logo' => null,
         ];
     }

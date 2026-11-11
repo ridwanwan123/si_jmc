@@ -35,7 +35,7 @@ return [
     'unique' => ':Attribute sudah dipakai.',
 
     'attributes' => [
-        'nsm' => 'NSM',
+        'npsn' => 'NPSN',
         'nama' => 'nama',
         'tahun' => 'tahun',
         'jenjang' => 'jenjang',

@@ -218,20 +218,3 @@ describe('lomba dari master', function () {
             ->assertFormFieldDoesNotExist('cabor_id');
     });
 });
-
-describe('pemindahan data lama', function () {
-    it('membuat master dari lomba lama dan menghubungkannya', function () {
-        // Simulasikan data sebelum master ada: lomba tanpa mata_lomba_id.
-        $l1 = Lomba::factory()->for($this->lama)->for($this->olahraga)->create(['nama' => 'Futsal', 'jenjang' => 'MA', 'kategori' => 'Putra']);
-        $l2 = Lomba::factory()->for($this->edisi)->for($this->olahraga)->create(['nama' => 'Futsal', 'jenjang' => 'MA', 'kategori' => 'Putra']);
-        DB::table('lomba')->update(['mata_lomba_id' => null]);
-        DB::table('mata_lomba')->delete();
-
-        MataLomba::isiDariLombaLama();
-        MataLomba::isiDariLombaLama(); // aman dijalankan ulang
-
-        expect(MataLomba::count())->toBe(1)
-            ->and($l1->fresh()->mata_lomba_id)->toBe(MataLomba::first()->id)
-            ->and($l2->fresh()->mata_lomba_id)->toBe(MataLomba::first()->id);
-    });
-});

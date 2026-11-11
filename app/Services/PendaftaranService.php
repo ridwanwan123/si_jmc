@@ -46,10 +46,12 @@ class PendaftaranService
         }
 
         $peserta = array_values($data['peserta']);
-        if (count($peserta) !== $lomba->jumlah_anggota) {
-            throw ValidationException::withMessages(['peserta' => $lomba->tim()
-                ? "Lomba ini tim beranggotakan tepat {$lomba->jumlah_anggota} orang."
-                : 'Lomba ini perorangan, isi satu peserta.']);
+        // Tim: 1 sampai jumlah_anggota orang (anggota pertama = kapten). Perorangan: tepat 1.
+        if ($lomba->tim() && (count($peserta) < 1 || count($peserta) > $lomba->jumlah_anggota)) {
+            throw ValidationException::withMessages(['peserta' => "Lomba ini tim maksimal {$lomba->jumlah_anggota} orang; isi minimal kapten tim."]);
+        }
+        if (! $lomba->tim() && count($peserta) !== 1) {
+            throw ValidationException::withMessages(['peserta' => 'Lomba ini perorangan, isi satu peserta.']);
         }
 
         $gtk = $lomba->cabor?->slug === 'gtk';
@@ -68,8 +70,13 @@ class PendaftaranService
             // Kunci lomba agar dua kiriman bersamaan tidak lolos cek duplikat / nomor.
             Lomba::query()->whereKey($lomba->id)->lockForUpdate()->first();
 
-            if (Pendaftaran::query()->where('lomba_id', $lomba->id)->where('madrasah_id', $madrasah->id)->exists()) {
-                throw ValidationException::withMessages(['lomba_id' => "{$madrasah->nama} sudah terdaftar di lomba {$lomba->namaLengkap()}."]);
+            // Satu madrasah hanya boleh satu pendaftaran AKTIF (menunggu/diverifikasi) per mata lomba.
+            // Pendaftaran yang ditolak tidak dihitung, jadi madrasah boleh daftar ulang.
+            // Dijaga juga oleh unique index (lomba_id, madrasah_aktif).
+            $ada = $this->pendaftaranAktif($lomba->id, $madrasah->id)?->nomor;
+            if ($ada) {
+                throw ValidationException::withMessages(['lomba_id' => "{$madrasah->nama} sudah terdaftar di lomba {$lomba->namaLengkap()} (nomor {$ada}). "
+                    .'Satu madrasah hanya boleh mengirim satu peserta/tim per mata lomba.']);
             }
 
             $dobel = PendaftaranPeserta::query()
@@ -102,8 +109,26 @@ class PendaftaranService
         });
     }
 
+    /** Pendaftaran madrasah di lomba ini yang belum ditolak (maksimal satu). */
+    public function pendaftaranAktif(int $lombaId, int $madrasahId, ?int $kecuali = null): ?Pendaftaran
+    {
+        return Pendaftaran::query()
+            ->where('lomba_id', $lombaId)
+            ->where('madrasah_id', $madrasahId)
+            ->where('status', '!=', StatusPendaftaran::Ditolak->value)
+            ->when($kecuali, fn ($q) => $q->whereKeyNot($kecuali))
+            ->first();
+    }
+
+    /** @throws ValidationException */
     public function verifikasi(Pendaftaran $pendaftaran, ?string $catatan = null): Pendaftaran
     {
+        // Pendaftaran yang dulu ditolak tidak bisa diaktifkan lagi jika madrasah sudah daftar ulang.
+        if ($pendaftaran->status === StatusPendaftaran::Ditolak
+            && ($pengganti = $this->pendaftaranAktif($pendaftaran->lomba_id, $pendaftaran->madrasah_id, $pendaftaran->id))) {
+            throw ValidationException::withMessages(['status' => "Madrasah ini sudah mendaftar ulang di lomba yang sama (nomor {$pengganti->nomor}). Verifikasi pendaftaran {$pengganti->nomor} saja."]);
+        }
+
         $pendaftaran->update([
             'status' => StatusPendaftaran::Diverifikasi,
             'catatan' => $catatan,

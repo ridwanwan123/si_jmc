@@ -18,6 +18,7 @@ use App\Services\HasilService;
 use App\Services\LombaService;
 use App\Services\PendaftaranService;
 use Database\Seeders\CaborSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -84,7 +85,9 @@ describe('form /daftar', function () {
         Storage::disk('local')->assertExists($p->surat_tugas_path);
 
         // Bukti hanya bisa dibuka lewat link bertanda tangan.
-        $this->get($res->json('bukti'))->assertOk()->assertSee('JMC26-0001')->assertSee('0101234562');
+        $this->get($res->json('bukti'))->assertOk()->assertSee('JMC26-0001')->assertSee('0101234562')
+            ->assertSee('Tim maks. 3 orang')
+            ->assertSeeInOrder(['Rizky Pratama', 'KAPTEN', 'Annisa Rahma']);
         $this->get('/daftar/bukti/JMC26-0001')->assertForbidden();
 
         // Nomor berikutnya berurutan.
@@ -92,9 +95,48 @@ describe('form /daftar', function () {
             ->assertCreated()->assertJsonPath('nomor', 'JMC26-0002');
     });
 
-    it('menolak jumlah anggota yang tidak sesuai lomba', function () {
+    it('menerima tim dengan kapten saja (jumlah anggota adalah batas maksimal)', function () {
         $this->postJson('/daftar', kirimanDaftar(['peserta' => [['nama' => 'Rizky Pratama', 'nisn' => '0101234561']]]))
+            ->assertCreated();
+
+        $p = Pendaftaran::with('peserta.pendaftaran.lomba')->firstOrFail();
+        expect($p->peserta)->toHaveCount(1)
+            ->and($p->peserta->first()->isKapten())->toBeTrue();
+    });
+
+    it('menerima tim yang kurang dari maksimal dan menandai anggota pertama sebagai kapten', function () {
+        $this->postJson('/daftar', kirimanDaftar(['peserta' => [
+            ['nama' => 'Rizky Pratama', 'nisn' => '0101234561'],
+            ['nama' => 'Annisa Rahma', 'nisn' => '0101234562'],
+        ]]))->assertCreated();
+
+        $peserta = Pendaftaran::with('peserta.pendaftaran.lomba')->firstOrFail()->peserta;
+        expect($peserta->map->isKapten()->all())->toBe([true, false]);
+    });
+
+    it('menolak tim yang melebihi maksimal anggota', function () {
+        $this->postJson('/daftar', kirimanDaftar(['peserta' => [
+            ['nama' => 'Rizky Pratama', 'nisn' => '0101234561'],
+            ['nama' => 'Annisa Rahma', 'nisn' => '0101234562'],
+            ['nama' => 'Farhan Hakim', 'nisn' => '0101234563'],
+            ['nama' => 'Dimas Saputra', 'nisn' => '0101234564'],
+        ]]))->assertUnprocessable()->assertJsonValidationErrors(['peserta'])
+            ->assertJsonPath('errors.peserta.0', 'Lomba ini tim maksimal 3 orang; isi minimal kapten tim.');
+    });
+
+    it('menolak tim tanpa anggota', function () {
+        $this->postJson('/daftar', kirimanDaftar(['peserta' => []]))
             ->assertUnprocessable()->assertJsonValidationErrors(['peserta']);
+    });
+
+    it('lomba perorangan tetap tepat satu peserta', function () {
+        $this->postJson('/daftar', kirimanDaftar(['lomba_id' => $this->mtq->id, 'peserta' => [
+            ['nama' => 'Keisha Amara', 'nisn' => '0101234570'],
+            ['nama' => 'Nadia Putri', 'nisn' => '0101234571'],
+        ]]))->assertUnprocessable()->assertJsonPath('errors.peserta.0', 'Lomba ini perorangan, isi satu peserta.');
+
+        $this->postJson('/daftar', kirimanDaftar(['lomba_id' => $this->mtq->id, 'peserta' => [['nama' => 'Keisha Amara', 'nisn' => '0101234570']]]))
+            ->assertCreated();
     });
 
     it('menolak lomba yang bukan jenjang madrasahnya', function () {
@@ -109,7 +151,69 @@ describe('form /daftar', function () {
             ['nama' => 'Siswa Lain', 'nisn' => '0109999991'],
             ['nama' => 'Siswa Dua', 'nisn' => '0109999992'],
             ['nama' => 'Siswa Tiga', 'nisn' => '0109999993'],
-        ]]))->assertUnprocessable()->assertJsonValidationErrors(['lomba_id']);
+        ]]))->assertUnprocessable()->assertJsonValidationErrors(['lomba_id'])
+            ->assertJsonPath('errors.lomba_id.0', 'MTsN 3 Jakarta sudah terdaftar di lomba Cerdas Cermat PAI · MTs · Beregu (nomor JMC26-0001). '
+                .'Satu madrasah hanya boleh mengirim satu peserta/tim per mata lomba.');
+
+        expect(Pendaftaran::count())->toBe(1);
+    });
+
+    it('mengizinkan daftar ulang setelah pendaftaran sebelumnya ditolak', function () {
+        $this->postJson('/daftar', kirimanDaftar())->assertCreated();
+        $lama = Pendaftaran::firstOrFail();
+
+        // Masih menunggu: belum boleh daftar ulang, dan form menandai "sudah terdaftar".
+        $this->postJson('/daftar', kirimanDaftar())->assertUnprocessable()->assertJsonValidationErrors(['lomba_id']);
+        expect($this->get('/daftar')->viewData('terdaftar')->all())->toBe(["{$this->mts->id}-{$this->cc->id}"]);
+
+        app(PendaftaranService::class)->tolak($lama, 'Surat tugas salah.');
+
+        // Setelah ditolak: tanda hilang dan madrasah boleh mendaftar lagi (NISN yang sama pun boleh).
+        expect($this->get('/daftar')->viewData('terdaftar')->all())->toBe([]);
+        $this->postJson('/daftar', kirimanDaftar())->assertCreated()->assertJsonPath('nomor', 'JMC26-0002');
+
+        // Tapi tidak boleh daftar untuk ketiga kalinya selama yang kedua masih aktif.
+        $this->postJson('/daftar', kirimanDaftar())->assertUnprocessable()
+            ->assertJsonPath('errors.lomba_id.0', fn (string $pesan) => str_contains($pesan, 'nomor JMC26-0002'));
+    });
+
+    it('tidak bisa memverifikasi pendaftaran lama yang ditolak jika madrasah sudah daftar ulang', function () {
+        $this->postJson('/daftar', kirimanDaftar())->assertCreated();
+        $lama = Pendaftaran::firstOrFail();
+        app(PendaftaranService::class)->tolak($lama, 'Surat tugas salah.');
+        $this->postJson('/daftar', kirimanDaftar())->assertCreated();
+
+        expect(fn () => app(PendaftaranService::class)->verifikasi($lama->fresh()))
+            ->toThrow(ValidationException::class, 'sudah mendaftar ulang');
+
+        $this->actingAs(User::factory()->create());
+        Livewire::test(ListPendaftarans::class)->callTableAction('verifikasi', $lama)->assertNotified('Tidak bisa diverifikasi');
+        expect($lama->fresh()->status)->toBe(StatusPendaftaran::Ditolak);
+    });
+
+    it('mengizinkan madrasah yang sama di mata lomba lain, dan madrasah lain di mata lomba yang sama', function () {
+        $lain = Madrasah::factory()->jenjang(Jenjang::MTs)->create();
+
+        $this->postJson('/daftar', kirimanDaftar())->assertCreated();
+        $this->postJson('/daftar', kirimanDaftar(['lomba_id' => $this->mtq->id, 'peserta' => [['nama' => 'Keisha Amara', 'nisn' => '0101234570']]]))
+            ->assertCreated();
+        $this->postJson('/daftar', kirimanDaftar(['madrasah_id' => $lain->id, 'peserta' => [['nama' => 'Siswa Lain', 'nisn' => '0109999991']]]))
+            ->assertCreated();
+
+        expect(Pendaftaran::count())->toBe(3);
+    });
+
+    it('database hanya mengizinkan satu pendaftaran aktif per madrasah per mata lomba', function () {
+        $data = ['edisi_id' => $this->edisi->id, 'lomba_id' => $this->cc->id, 'madrasah_id' => $this->mts->id,
+            'guru_nama' => 'Guru', 'guru_wa' => '0812'];
+
+        // Beberapa pendaftaran ditolak boleh menumpuk.
+        Pendaftaran::create($data + ['nomor' => 'X-1', 'status' => StatusPendaftaran::Ditolak]);
+        Pendaftaran::create($data + ['nomor' => 'X-2', 'status' => StatusPendaftaran::Ditolak]);
+        Pendaftaran::create($data + ['nomor' => 'X-3']); // menunggu
+
+        expect(fn () => Pendaftaran::create($data + ['nomor' => 'X-4', 'status' => StatusPendaftaran::Diverifikasi]))
+            ->toThrow(QueryException::class);
     });
 
     it('menolak NISN dobel di lomba yang sama', function () {
@@ -174,8 +278,19 @@ describe('admin pendaftaran', function () {
     });
 
     it('menampilkan daftar dan detail pendaftaran', function () {
-        Livewire::test(ListPendaftarans::class)->assertCanSeeTableRecords([$this->daftar])->assertSee('Rizky Pratama');
-        Livewire::test(ViewPendaftaran::class, ['record' => $this->daftar->getRouteKey()])->assertOk()->assertSee('JMC26-0001')->assertSee('0101234563');
+        Livewire::test(ListPendaftarans::class)
+            ->assertCanSeeTableRecords([$this->daftar])
+            ->assertTableColumnExists('nomor')->assertTableColumnExists('lomba.nama')->assertTableColumnExists('madrasah.nama')
+            ->assertTableColumnExists('status')->assertTableColumnExists('created_at')
+            ->assertTableColumnDoesNotExist('peserta.nama')
+            ->assertSeeHtml('Aksi') // label kolom menu titik tiga
+            // Nama peserta tidak tampil di tabel, tapi tetap bisa dicari.
+            ->searchTable('Farhan')->assertCanSeeTableRecords([$this->daftar])
+            ->searchTable('Tidak Ada')->assertCanNotSeeTableRecords([$this->daftar]);
+
+        Livewire::test(ViewPendaftaran::class, ['record' => $this->daftar->getRouteKey()])->assertOk()
+            ->assertSee('JMC26-0001')->assertSee('0101234563')
+            ->assertSeeInOrder(['Guru pendamping', 'Anggota tim', 'Rizky Pratama (Kapten)']);
     });
 
     it('memverifikasi dan menolak dengan catatan', function () {

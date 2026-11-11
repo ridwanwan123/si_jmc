@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\StatusPendaftaran;
 use App\Http\Requests\DaftarRequest;
 use App\Models\Cabor;
 use App\Models\Lomba;
@@ -36,14 +37,15 @@ class DaftarController extends Controller
         return view('publik.daftar', [
             'dibuka' => $dibuka,
             'madrasah' => Madrasah::query()->orderBy('nama')
-                ->get(['id', 'nsm', 'nama', 'jenjang', 'status', 'wilayah'])
+                ->get(['id', 'npsn', 'nama', 'jenjang', 'status', 'kota', 'kelurahan'])
                 ->map(fn (Madrasah $m) => [
                     'id' => $m->id,
-                    'nsm' => $m->nsm,
+                    'npsn' => $m->npsn,
                     'nama' => $m->nama,
                     'jenjang' => $m->jenjang->value,
                     'status' => $m->status?->value,
-                    'wilayah' => $m->wilayah?->value,
+                    'kota' => $m->kota?->value,
+                    'kelurahan' => $m->kelurahan,
                 ])->values(),
             'cabor' => Cabor::query()->orderBy('urutan')->get()
                 ->map(fn (Cabor $c) => ['id' => $c->id, 'nama' => $c->nama, 'ikon' => $c->ikon, 'nomor' => $c->nomor()])
@@ -58,8 +60,11 @@ class DaftarController extends Controller
                 'gtk' => $l->cabor->slug === 'gtk', // peserta guru: NUPTK 16 digit, bukan NISN
             ])->values(),
             // Pasangan madrasah–lomba yang sudah terdaftar, mis. "12-40" (ditandai "Sudah terdaftar").
+            // Pendaftaran yang ditolak tidak dihitung: madrasah boleh daftar ulang.
             'terdaftar' => $edisi->exists
-                ? Pendaftaran::query()->where('edisi_id', $edisi->id)->get(['madrasah_id', 'lomba_id'])
+                ? Pendaftaran::query()->where('edisi_id', $edisi->id)
+                    ->where('status', '!=', StatusPendaftaran::Ditolak->value)
+                    ->get(['madrasah_id', 'lomba_id'])
                     ->map(fn ($p) => $p->madrasah_id.'-'.$p->lomba_id)->values()
                 : [],
             'kontak' => config('jmc.pendaftaran.kontak_panitia'),

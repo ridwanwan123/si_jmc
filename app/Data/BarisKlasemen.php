@@ -11,10 +11,10 @@ final readonly class BarisKlasemen
 {
     public function __construct(
         public int $madrasahId,
-        public string $nsm,
+        public string $npsn,
         public string $nama,
         public Jenjang $jenjang,
-        public string $wilayah,
+        public string $kota,
         public string $status,
         public int $emas,
         public int $perak,
@@ -44,7 +44,7 @@ final readonly class BarisKlasemen
     public function denganPeringkat(int $peringkat, bool $seri): self
     {
         return new self(
-            $this->madrasahId, $this->nsm, $this->nama, $this->jenjang, $this->wilayah, $this->status,
+            $this->madrasahId, $this->npsn, $this->nama, $this->jenjang, $this->kota, $this->status,
             $this->emas, $this->perak, $this->perunggu, $peringkat, $seri,
         );
     }

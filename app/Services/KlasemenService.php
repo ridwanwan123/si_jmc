@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\BarisKlasemen;
 use App\Enums\Jenjang;
+use App\Enums\StatusPendaftaran;
 use App\Models\Edisi;
 use App\Models\Hasil;
 use App\Models\Madrasah;
@@ -151,8 +152,28 @@ class KlasemenService
             'perunggu' => $perunggu,
             'total_medali' => $emas + $perak + $perunggu,
             'madrasah_peraih' => (int) $medali->madrasah_peraih,
-            'madrasah_peserta' => (int) $edisi->jumlah_madrasah_peserta,
+            'madrasah_peserta' => $this->jumlahMadrasahPeserta($edisi),
         ];
+    }
+
+    /**
+     * Jumlah madrasah berbeda yang mengikuti edisi: punya pendaftaran yang
+     * diverifikasi, atau punya juara (termasuk juara yang diinput tanpa pendaftaran).
+     */
+    public function jumlahMadrasahPeserta(Edisi $edisi): int
+    {
+        $pendaftar = DB::table('pendaftaran')
+            ->where('edisi_id', $edisi->getKey())
+            ->where('status', StatusPendaftaran::Diverifikasi->value)
+            ->select('madrasah_id');
+
+        $peraih = DB::table('hasil as h')
+            ->join('lomba as l', 'l.id', '=', 'h.lomba_id')
+            ->where('l.edisi_id', $edisi->getKey())
+            ->select('h.madrasah_id');
+
+        // UNION (bukan UNION ALL) sudah menghilangkan madrasah ganda.
+        return DB::query()->fromSub($pendaftar->union($peraih), 'peserta')->count();
     }
 
     /** MAX(hasil.updated_at) untuk lomba di edisi ini, dalam zona Asia/Jakarta. */
@@ -198,7 +219,7 @@ class KlasemenService
     /** @return list<string> */
     private function kolomMadrasah(): array
     {
-        return ['m.id', 'm.nsm', 'm.nama', 'm.jenjang', 'm.wilayah', 'm.status'];
+        return ['m.id', 'm.npsn', 'm.nama', 'm.jenjang', 'm.kota', 'm.status'];
     }
 
     private function kolomMedali(): string
@@ -212,10 +233,10 @@ class KlasemenService
     {
         return new BarisKlasemen(
             madrasahId: (int) $r->id,
-            nsm: (string) $r->nsm,
+            npsn: (string) $r->npsn,
             nama: (string) $r->nama,
             jenjang: Jenjang::from($r->jenjang),
-            wilayah: (string) $r->wilayah,
+            kota: (string) $r->kota,
             status: (string) $r->status,
             emas: (int) $r->emas,
             perak: (int) $r->perak,

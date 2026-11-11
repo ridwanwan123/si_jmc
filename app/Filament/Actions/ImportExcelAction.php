@@ -12,8 +12,8 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -41,8 +41,10 @@ class ImportExcelAction
         $schema[] = FileUpload::make('file')
             ->label('File Excel (.xlsx)')
             ->helperText('Kolom: '.implode(', ', $importClass::header()).'. Baris pertama = header.')
-            ->disk('local')
-            ->directory('imports')
+            // File tidak dipindah ke storage: dibaca langsung dari file sementara
+            // Livewire. Dengan begitu file tetap ada jika import gagal dan admin
+            // menekan "Import" lagi (sebelumnya file sudah terhapus → FileNotFound).
+            ->storeFiles(false)
             ->acceptedFileTypes([
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'application/vnd.ms-excel',
@@ -60,20 +62,29 @@ class ImportExcelAction
             ->modalSubmitActionLabel('Import')
             ->schema($schema)
             ->action(function (array $data, Action $action) use ($jalankan) {
-                $path = Storage::disk('local')->path($data['file']);
-                $edisi = isset($data['edisi_id']) ? Edisi::find($data['edisi_id']) : null;
+                /** @var TemporaryUploadedFile $file */
+                $file = $data['file'];
 
-                try {
-                    $laporan = $jalankan($path, $edisi);
-                } finally {
-                    Storage::disk('local')->delete($data['file']);
+                if (! $file instanceof TemporaryUploadedFile || ! $file->exists()) {
+                    Notification::make()
+                        ->title('File tidak ditemukan')
+                        ->body('Silakan pilih ulang file Excel lalu import lagi.')
+                        ->danger()
+                        ->send();
+                    $action->halt();
                 }
+
+                $edisi = isset($data['edisi_id']) ? Edisi::find($data['edisi_id']) : null;
+                $laporan = $jalankan($file->getRealPath(), $edisi);
 
                 static::kirimNotifikasi($laporan);
 
                 if (! $laporan->berhasil()) {
+                    // File sementara dibiarkan agar bisa langsung di-import ulang.
                     $action->halt();
                 }
+
+                $file->delete();
             });
     }
 

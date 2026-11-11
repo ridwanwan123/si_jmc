@@ -10,7 +10,7 @@ use Maatwebsite\Excel\Facades\Excel;
 /**
  * Dasar import Excel: membaca sheet pertama (baris 1 = header) menjadi array.
  *
- * Header diubah ke snake_case, mis. "NSM Madrasah" → nsm_madrasah,
+ * Header diubah ke snake_case, mis. "NPSN Madrasah" → npsn_madrasah,
  * "Kuota Juara 1" → kuota_juara_1. Nomor baris Excel = indeks + 2.
  *
  * Semua import bersifat semua-atau-tidak-sama-sekali: jika ada satu baris

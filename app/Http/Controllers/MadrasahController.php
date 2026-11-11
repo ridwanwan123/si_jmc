@@ -29,7 +29,7 @@ class MadrasahController extends Controller
         $madrasah = Madrasah::query()
             ->when($kata !== '', fn (Builder $q) => $q->where(fn (Builder $q) => $q
                 ->where('nama', 'like', '%'.addcslashes($kata, '%_\\').'%')
-                ->orWhere('nsm', 'like', addcslashes($kata, '%_\\').'%')))
+                ->orWhere('npsn', 'like', addcslashes($kata, '%_\\').'%')))
             ->when($jenjang, fn (Builder $q) => $q->where('jenjang', $jenjang->value))
             ->orderBy('nama')
             ->paginate(50)
@@ -70,7 +70,7 @@ class MadrasahController extends Controller
             'rincian' => $rincian,
             'semuaCabor' => Cabor::query()->orderBy('urutan')->get(),
             'riwayat' => $this->klasemen->riwayat($madrasah),
-            'opsi' => Madrasah::query()->orderBy('nama')->get(['id', 'nsm', 'nama', 'jenjang']),
+            'opsi' => Madrasah::query()->orderBy('nama')->get(['id', 'npsn', 'nama', 'jenjang']),
             'inisial' => $this->inisial($madrasah->nama),
         ]);
     }

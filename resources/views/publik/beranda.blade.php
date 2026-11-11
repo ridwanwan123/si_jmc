@@ -136,7 +136,7 @@
     <section class="wadah">
         @php
             $angka = [
-                [$ringkasan['madrasah_peserta'] ?: $ringkasan['madrasah_peraih'], 'Madrasah'],
+                [$ringkasan['madrasah_peserta'], 'Madrasah'],
                 [$cabor->count(), 'Cabang lomba'],
                 [$ringkasan['jumlah_lomba'], 'Lomba'],
                 [$ringkasan['total_medali'], 'Medali dibagikan'],
@@ -152,6 +152,33 @@
         </div>
     </section>
 
+    {{-- BERITA (disembunyikan jika belum ada berita terbit) --}}
+    @if ($beritaUtama)
+        <section class="wadah pt-16" aria-labelledby="judul-berita">
+            <div class="mb-6 flex flex-wrap items-end justify-between gap-3 border-b-2 border-ink pb-4">
+                <h2 id="judul-berita" class="judul-seksi">Berita</h2>
+                <a href="{{ rute('berita.index') }}" class="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-ink underline underline-offset-4">Semua berita <x-ikon nama="panah-kanan" class="size-4" /></a>
+            </div>
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)]">
+                <article class="group relative">
+                    <x-berita.sampul :berita="$beritaUtama" ikon="size-14" class="aspect-[16/9]" />
+                    <x-berita.meta :berita="$beritaUtama" class="mt-4" />
+                    <h3 class="mt-2 font-judul text-[clamp(20px,2.2vw,26px)] font-extrabold leading-tight" style="font-stretch: 110%">
+                        <a href="{{ rute('berita.show', $beritaUtama->slug) }}" class="text-ink no-underline after:absolute after:inset-0 group-hover:text-accent">{{ $beritaUtama->judul }}</a>
+                    </h3>
+                    <p class="mt-2 line-clamp-3 text-[15px] leading-relaxed text-muted">{{ $beritaUtama->ringkasan }}</p>
+                </article>
+                @if ($beritaLain->isNotEmpty())
+                    <div class="flex flex-col">
+                        @foreach ($beritaLain as $b)
+                            <x-berita.baris :berita="$b" class="border-b border-line py-4 first:pt-0 lg:first:pt-0" />
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
     {{-- KLASEMEN RINGKAS --}}
     <section class="wadah pb-6 pt-16">
         <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -164,11 +191,11 @@
         </div>
         <div class="border-t-2 border-ink">
             @forelse ($top as $b)
-                <a href="{{ rute('madrasah.show', $b->nsm) }}" class="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-line py-4.5 text-ink no-underline">
+                <a href="{{ rute('madrasah.show', $b->npsn) }}" class="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-line py-4.5 text-ink no-underline">
                     <span class="w-14 font-mono text-xl font-bold">{{ $b->labelPeringkat() }}</span>
                     <span class="min-w-0 flex-[1_1_220px]">
                         <span class="block text-[17px] font-bold">{{ $b->nama }}</span>
-                        <span class="block text-[13px] text-muted">{{ $b->jenjang->value }} · {{ $b->wilayah }}</span>
+                        <span class="block text-[13px] text-muted">{{ $b->jenjang->value }} · {{ $b->kota }}</span>
                     </span>
                     <span class="flex min-w-0 flex-[2_1_280px] items-center gap-3.5">
                         <x-batang-medali :emas="$b->emas" :perak="$b->perak" :perunggu="$b->perunggu" :maks="$maksTop" tinggi="h-3" class="flex-auto" />

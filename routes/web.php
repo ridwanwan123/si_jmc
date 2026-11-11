@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArsipController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\BeritaController;
 use App\Http\Controllers\CaborController;
 use App\Http\Controllers\DaftarController;
 use App\Http\Controllers\GaleriController;
@@ -18,8 +19,11 @@ Route::middleware(TetapkanEdisi::class)->group(function () {
     Route::get('/cabor', [CaborController::class, 'index'])->name('cabor.index');
     Route::get('/cabor/{cabor:slug}', [CaborController::class, 'show'])->name('cabor.show');
 
+    Route::get('/berita', [BeritaController::class, 'index'])->name('berita.index');
+    Route::get('/berita/{berita:slug}', [BeritaController::class, 'show'])->name('berita.show');
+
     Route::get('/madrasah', [MadrasahController::class, 'index'])->name('madrasah.index');
-    Route::get('/madrasah/{madrasah:nsm}', [MadrasahController::class, 'show'])->name('madrasah.show');
+    Route::get('/madrasah/{madrasah:npsn}', [MadrasahController::class, 'show'])->name('madrasah.show');
 
     Route::get('/arsip', ArsipController::class)->name('arsip');
 

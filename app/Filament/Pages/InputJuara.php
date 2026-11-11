@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Enums\Medali;
 use App\Filament\Resources\Lombas\LombaResource;
+use App\Models\Cabor;
 use App\Models\Lomba;
 use App\Models\Madrasah;
 use App\Models\Pendaftaran;
@@ -46,8 +47,16 @@ class InputJuara extends Page
     /** @var array<string, mixed> */
     public ?array $data = [];
 
+    public static function canAccess(array $parameters = []): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaLombaApaPun();
+    }
+
     public function mount(Lomba $lomba): void
     {
+        // Admin cabor: hanya lomba cabornya atau lomba GTK yang dikelola cabornya.
+        abort_unless(auth()->user()?->bolehKelolaLomba($lomba), 403);
+
         $this->lomba = $lomba->load(['cabor', 'edisi']);
 
         $hasil = $lomba->hasil()->get();
@@ -65,6 +74,14 @@ class InputJuara extends Page
         $this->form->fill($isi);
     }
 
+    /** Halaman cabor tujuan "kembali": cabor milik admin cabor (lomba GTK), selain itu cabor lomba. */
+    protected function caborKembali(): Cabor
+    {
+        $user = auth()->user();
+
+        return $user?->isAdminCabor() && $user->cabor ? $user->cabor : $this->lomba->cabor;
+    }
+
     public function getTitle(): string|Htmlable
     {
         return 'Juara '.$this->lomba->nama;
@@ -76,14 +93,14 @@ class InputJuara extends Page
         $peserta = $l->pendaftaran()->diverifikasi()->count();
 
         return "{$l->cabor->nama} · {$l->jenjang->value} · {$l->kategori->value} · "
-            .($l->tim() ? "Tim {$l->jumlah_anggota} orang" : 'Perorangan')
+            .$l->labelAnggota()
             ." · {$l->edisi->nama} · {$peserta} peserta terverifikasi";
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            KelolaCabor::getUrl(['cabor' => $this->lomba->cabor->slug]) => $this->lomba->cabor->nama,
+            KelolaCabor::getUrl(['cabor' => $this->caborKembali()->slug]) => $this->caborKembali()->nama,
             'Input juara',
         ];
     }
@@ -116,7 +133,7 @@ class InputJuara extends Page
                     Actions::make([
                         Action::make('simpan')->label('Simpan juara')->submit('simpan')->keyBindings(['mod+s']),
                         Action::make('batal')->label('Kembali')->color('gray')
-                            ->url(KelolaCabor::getUrl(['cabor' => $this->lomba->cabor->slug])),
+                            ->url(KelolaCabor::getUrl(['cabor' => $this->caborKembali()->slug])),
                     ]),
                 ]),
         ]);
@@ -160,14 +177,16 @@ class InputJuara extends Page
                                 }),
                             Select::make('madrasah_id')
                                 ->label('Madrasah')
-                                ->placeholder('Cari nama madrasah atau NSM…')
+                                ->placeholder('Cari nama madrasah atau NPSN…')
                                 ->searchable()
                                 ->getSearchResultsUsing(fn (string $search) => Madrasah::query()
                                     ->where('jenjang', $this->lomba->jenjang->value)
-                                    ->where(fn (Builder $q) => $q->where('nama', 'like', "%{$search}%")->orWhere('nsm', 'like', "%{$search}%"))
+                                    ->where(fn (Builder $q) => $q->where('nama', 'like', "%{$search}%")->orWhere('npsn', 'like', "%{$search}%"))
                                     ->orderBy('nama')->limit(50)
-                                    ->pluck('nama', 'id')->all())
-                                ->getOptionLabelUsing(fn ($value) => Madrasah::find($value)?->nama)
+                                    ->get()
+                                    ->mapWithKeys(fn (Madrasah $m) => [$m->id => LombaResource::labelMadrasah($m)])
+                                    ->all())
+                                ->getOptionLabelUsing(fn ($value) => ($m = Madrasah::find($value)) ? LombaResource::labelMadrasah($m) : null)
                                 ->visible(fn (Get $get) => (bool) $get('manual'))
                                 ->required(fn (Get $get) => (bool) $get('manual')),
                             Textarea::make('nama_peserta')
@@ -231,7 +250,7 @@ class InputJuara extends Page
             ->success()
             ->send();
 
-        $this->redirect(KelolaCabor::getUrl(['cabor' => $this->lomba->cabor->slug]));
+        $this->redirect(KelolaCabor::getUrl(['cabor' => $this->caborKembali()->slug]));
     }
 
     /**

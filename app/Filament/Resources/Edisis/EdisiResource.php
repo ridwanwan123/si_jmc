@@ -6,6 +6,7 @@ use App\Filament\Resources\Edisis\Pages\CreateEdisi;
 use App\Filament\Resources\Edisis\Pages\EditEdisi;
 use App\Filament\Resources\Edisis\Pages\ListEdisis;
 use App\Models\Edisi;
+use App\Services\KlasemenService;
 use App\Services\LombaService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -30,6 +31,12 @@ use UnitEnum;
 class EdisiResource extends Resource
 {
     protected static ?string $model = Edisi::class;
+
+    /** Master data hanya untuk superadmin. */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaMaster();
+    }
 
     protected static ?string $slug = 'edisi';
 
@@ -83,13 +90,6 @@ class EdisiResource extends Resource
                             ->label('Pendaftaran ditutup')
                             ->helperText('Hari terakhir pendaftaran. Setelah itu tahap berganti ke Tanding.')
                             ->afterOrEqual('pendaftaran_buka'),
-                        TextInput::make('jumlah_madrasah_peserta')
-                            ->label('Jumlah madrasah peserta')
-                            ->helperText('Diisi manual oleh panitia.')
-                            ->integer()
-                            ->minValue(0)
-                            ->default(0)
-                            ->required(),
                         Toggle::make('is_aktif')
                             ->label('Edisi aktif')
                             ->helperText('Hanya satu edisi yang aktif. Mengaktifkan edisi ini akan menonaktifkan edisi lain.'),
@@ -127,8 +127,10 @@ class EdisiResource extends Resource
                 TextColumn::make('lomba_count')
                     ->label('Lomba')
                     ->numeric(),
-                TextColumn::make('jumlah_madrasah_peserta')
-                    ->label('Peserta')
+                TextColumn::make('madrasah_peserta')
+                    ->label('Madrasah peserta')
+                    ->tooltip('Dihitung dari pendaftaran yang diverifikasi dan madrasah peraih medali.')
+                    ->state(fn (Edisi $record) => app(KlasemenService::class)->jumlahMadrasahPeserta($record))
                     ->numeric(),
                 IconColumn::make('is_aktif')
                     ->label('Aktif')

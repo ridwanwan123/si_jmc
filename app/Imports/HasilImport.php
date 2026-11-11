@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Import hasil (juara) ke satu edisi, format satu baris per juara.
- * Kolom: Cabor, Lomba, Jenjang, Kategori, Peringkat, NSM Madrasah, Nama Peserta.
+ * Kolom: Cabor, Lomba, Jenjang, Kategori, Peringkat, NPSN Madrasah, Nama Peserta.
  *
  * Mode GANTI: untuk setiap lomba yang muncul di file, seluruh juara lamanya diganti
  * dengan isi file (lewat HasilService::simpan), sehingga import ulang tidak menggandakan.
@@ -26,12 +26,12 @@ class HasilImport extends ImportExcel
 
     public static function header(): array
     {
-        return ['Cabor', 'Lomba', 'Jenjang', 'Kategori', 'Peringkat', 'NSM Madrasah', 'Nama Peserta'];
+        return ['Cabor', 'Lomba', 'Jenjang', 'Kategori', 'Peringkat', 'NPSN Madrasah', 'Nama Peserta'];
     }
 
     public static function contoh(): array
     {
-        return ['Olahraga', 'Tenis Meja', 'MTs', 'Putri', '1', '111231710001', 'Siti Aminah'];
+        return ['Olahraga', 'Tenis Meja', 'MTs', 'Putri', '1', '20178214', 'Siti Aminah'];
     }
 
     public function import(Edisi $edisi, string $path): LaporanImport
@@ -43,8 +43,8 @@ class HasilImport extends ImportExcel
         $lomba = $edisi->lomba()->get()->keyBy(fn (Lomba $l) => $this->kunciLomba(
             $l->cabor_id, $l->nama, $l->jenjang, $l->kategori,
         ));
-        $nsmDiFile = array_filter(array_map(fn ($r) => $this->kolom($r, 'nsm_madrasah', 'nsm'), $rows));
-        $madrasah = Madrasah::query()->whereIn('nsm', $nsmDiFile)->pluck('id', 'nsm');
+        $npsnDiFile = array_filter(array_map(fn ($r) => $this->kolom($r, 'npsn_madrasah', 'npsn'), $rows));
+        $madrasah = Madrasah::query()->whereIn('npsn', $npsnDiFile)->pluck('id', 'npsn');
 
         /** @var array<int, array{lomba: Lomba, baris: list<array<string, mixed>>}> $perLomba */
         $perLomba = [];
@@ -57,7 +57,7 @@ class HasilImport extends ImportExcel
             $jenjang = $this->cocokEnum(Jenjang::class, $this->kolom($row, 'jenjang'));
             $kategori = $this->cocokEnum(Kategori::class, $this->kolom($row, 'kategori'));
             $peringkat = $this->kolom($row, 'peringkat', 'juara');
-            $nsm = $this->kolom($row, 'nsm_madrasah', 'nsm');
+            $npsn = $this->kolom($row, 'npsn_madrasah', 'npsn');
             $peserta = $this->kolom($row, 'nama_peserta', 'peserta');
 
             $salah = [];
@@ -76,10 +76,10 @@ class HasilImport extends ImportExcel
             if (! in_array($peringkat, ['1', '2', '3'], true)) {
                 $salah[] = 'peringkat harus 1, 2, atau 3';
             }
-            if ($nsm === null) {
-                $salah[] = 'NSM madrasah wajib diisi';
-            } elseif (! isset($madrasah[$nsm])) {
-                $salah[] = "madrasah dengan NSM {$nsm} tidak ditemukan";
+            if ($npsn === null) {
+                $salah[] = 'NPSN madrasah wajib diisi';
+            } elseif (! isset($madrasah[$npsn])) {
+                $salah[] = "madrasah dengan NPSN {$npsn} tidak ditemukan";
             }
 
             $l = null;
@@ -99,7 +99,7 @@ class HasilImport extends ImportExcel
             $perLomba[$l->id]['lomba'] = $l;
             $perLomba[$l->id]['baris'][] = [
                 'peringkat' => (int) $peringkat,
-                'madrasah_id' => $madrasah[$nsm],
+                'madrasah_id' => $madrasah[$npsn],
                 'nama_peserta' => $peserta,
             ];
         }

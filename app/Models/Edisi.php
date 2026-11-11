@@ -26,7 +26,6 @@ class Edisi extends Model
         'lokasi',
         'pendaftaran_buka',
         'pendaftaran_tutup',
-        'jumlah_madrasah_peserta',
         'is_aktif',
     ];
 
@@ -38,7 +37,6 @@ class Edisi extends Model
             'tanggal_selesai' => 'date',
             'pendaftaran_buka' => 'date',
             'pendaftaran_tutup' => 'date',
-            'jumlah_madrasah_peserta' => 'integer',
             'is_aktif' => 'boolean',
         ];
     }
@@ -166,6 +164,11 @@ class Edisi extends Model
     public function pendaftaran(): HasMany
     {
         return $this->hasMany(Pendaftaran::class);
+    }
+
+    public function berita(): HasMany
+    {
+        return $this->hasMany(Berita::class);
     }
 
     public function galeriAlbum(): HasMany

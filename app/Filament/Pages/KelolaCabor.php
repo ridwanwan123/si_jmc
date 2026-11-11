@@ -48,8 +48,16 @@ class KelolaCabor extends Page implements HasTable
     #[Url]
     public string $tab = 'lomba';
 
+    /** Superadmin (semua cabor) dan admin cabor (hanya cabornya, dicek di mount). */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaLombaApaPun();
+    }
+
     public function mount(Cabor $cabor): void
     {
+        abort_unless(auth()->user()?->bolehKelolaCabor($cabor), 403);
+
         $this->cabor = $cabor;
         $this->tab = in_array($this->tab, ['lomba', 'peserta'], true) ? $this->tab : 'lomba';
 
@@ -66,21 +74,30 @@ class KelolaCabor extends Page implements HasTable
     public static function getNavigationItems(): array
     {
         $edisi = Edisi::pilih();
+        $user = auth()->user();
 
-        $cabor = Cabor::query()->orderBy('urutan')
-            ->withCount([
-                'lomba as lomba_total' => fn (Builder $q) => $q->where('edisi_id', $edisi?->id),
-                'lomba as lomba_selesai' => fn (Builder $q) => $q->where('edisi_id', $edisi?->id)->whereHas('hasil'),
-            ])
-            ->get();
+        $cabor = Cabor::query()->orderBy('urutan')->get()
+            ->filter(fn (Cabor $c) => (bool) $user?->bolehKelolaCabor($c))
+            ->values();
 
-        $menunggu = Pendaftaran::query()
-            ->where('pendaftaran.edisi_id', $edisi?->id)
-            ->where('pendaftaran.status', StatusPendaftaran::Menunggu->value)
-            ->join('lomba', 'lomba.id', '=', 'pendaftaran.lomba_id')
-            ->selectRaw('lomba.cabor_id, COUNT(*) AS n')
-            ->groupBy('lomba.cabor_id')
-            ->pluck('n', 'cabor_id');
+        // Satu query lomba + satu query antrean; dibagi ke cabor di PHP (lomba GTK ikut cabor pengelolanya).
+        $lomba = Lomba::query()->where('edisi_id', $edisi?->id)
+            ->withExists('hasil')
+            ->get(['id', 'cabor_id', 'pengelola_cabor_id']);
+        $antreanPerLomba = Pendaftaran::query()
+            ->where('edisi_id', $edisi?->id)
+            ->where('status', StatusPendaftaran::Menunggu->value)
+            ->selectRaw('lomba_id, COUNT(*) AS n')
+            ->groupBy('lomba_id')
+            ->pluck('n', 'lomba_id');
+
+        foreach ($cabor as $c) {
+            $milik = $lomba->filter(fn (Lomba $l) => in_array($c->id, [$l->cabor_id, $l->pengelola_cabor_id], true));
+            $c->lomba_total = $milik->count();
+            $c->lomba_selesai = $milik->where('hasil_exists', true)->count();
+            $menunggu[$c->id] = $milik->sum(fn (Lomba $l) => (int) ($antreanPerLomba[$l->id] ?? 0));
+        }
+        $menunggu ??= [];
 
         return $cabor->map(function (Cabor $c, int $i) use ($menunggu) {
             $antre = (int) ($menunggu[$c->id] ?? 0);
@@ -138,8 +155,8 @@ class KelolaCabor extends Page implements HasTable
     {
         return $table
             ->query(fn () => Lomba::query()
-                ->where('cabor_id', $this->cabor->id)
-                ->with(['hasil.madrasah'])
+                ->untukCabor($this->cabor->id)
+                ->with(['hasil.madrasah', 'cabor'])
                 ->withCount('hasil'))
             ->defaultSort(fn (Builder $query) => $query->orderByRaw("FIELD(jenjang, 'RA', 'MI', 'MTs', 'MA')")->orderBy('urutan')->orderBy('nama'))
             ->recordUrl(fn (Lomba $record) => InputJuara::getUrl(['lomba' => $record]))
@@ -151,12 +168,14 @@ class KelolaCabor extends Page implements HasTable
                 TextColumn::make('nama')
                     ->label('Lomba')
                     ->weight('semibold')
+                    // Lomba cabor lain yang dikelola di sini (GTK), mis. "GTK" di halaman Olahraga.
+                    ->description(fn (Lomba $r) => $r->cabor_id !== $this->cabor->id ? 'Cabor '.$r->cabor->nama.' · medali dihitung ke '.$r->cabor->nama : null)
                     ->searchable(),
                 TextColumn::make('kategori')
                     ->grow(false),
                 TextColumn::make('jumlah_anggota')
                     ->label('Peserta')
-                    ->state(fn (Lomba $r) => $r->tim() ? "Tim {$r->jumlah_anggota} orang" : 'Perorangan')
+                    ->state(fn (Lomba $r) => $r->labelAnggota())
                     ->icon(fn (Lomba $r) => $r->tim() ? Heroicon::OutlinedUserGroup : Heroicon::OutlinedUser)
                     ->color('gray')
                     ->grow(false),
@@ -207,7 +226,7 @@ class KelolaCabor extends Page implements HasTable
                     DeleteAction::make()
                         ->label('Hapus lomba')
                         ->modalDescription('Semua juara dan pendaftaran lomba ini ikut terhapus.'),
-                ]),
+                ])->visible(fn () => (bool) auth()->user()?->bolehKelolaMaster()),
             ])
             ->emptyStateHeading('Belum ada lomba '.$this->cabor->nama)
             ->emptyStateDescription('Lomba muncul otomatis dari master. Tambahkan mata lomba '.$this->cabor->nama.' di menu Master → Mata Lomba.')
@@ -221,8 +240,8 @@ class KelolaCabor extends Page implements HasTable
     {
         return $table
             ->query(fn () => Pendaftaran::query()
-                ->whereHas('lomba', fn (Builder $q) => $q->where('cabor_id', $this->cabor->id))
-                ->with(['lomba.cabor', 'madrasah', 'peserta']))
+                ->whereHas('lomba', fn (Builder $q) => $q->untukCabor($this->cabor->id))
+                ->with(['lomba.cabor', 'madrasah']))
             ->defaultSort('created_at', 'desc')
             ->columns(PendaftaranResource::kolom(tampilCabor: false))
             ->filters([
@@ -234,7 +253,7 @@ class KelolaCabor extends Page implements HasTable
                 SelectFilter::make('lomba_id')
                     ->label('Lomba')
                     ->options(fn () => Lomba::query()
-                        ->where('cabor_id', $this->cabor->id)
+                        ->untukCabor($this->cabor->id)
                         ->where('edisi_id', $this->edisiTerpilih()?->id)
                         ->orderByRaw("FIELD(jenjang, 'RA', 'MI', 'MTs', 'MA')")->orderBy('nama')
                         ->get()
@@ -245,6 +264,7 @@ class KelolaCabor extends Page implements HasTable
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
             ->recordActions(PendaftaranResource::aksiBaris())
+            ->recordActionsColumnLabel('Aksi')
             ->toolbarActions([PendaftaranResource::verifikasiTerpilihAction()])
             ->emptyStateHeading('Belum ada pendaftaran')
             ->emptyStateDescription('Pendaftaran dari halaman /daftar untuk cabor ini akan muncul di sini.');
@@ -267,10 +287,10 @@ class KelolaCabor extends Page implements HasTable
 
         $pendaftaran = Pendaftaran::query()
             ->where('edisi_id', $edisi?->id)
-            ->whereHas('lomba', fn (Builder $q) => $q->where('cabor_id', $this->cabor->id));
+            ->whereHas('lomba', fn (Builder $q) => $q->untukCabor($this->cabor->id));
 
         return [
-            'lomba' => Lomba::query()->where('edisi_id', $edisi?->id)->where('cabor_id', $this->cabor->id)->count(),
+            'lomba' => Lomba::query()->where('edisi_id', $edisi?->id)->untukCabor($this->cabor->id)->count(),
             'peserta' => (clone $pendaftaran)->count(),
             'menunggu' => (clone $pendaftaran)->where('status', StatusPendaftaran::Menunggu->value)->count(),
         ];

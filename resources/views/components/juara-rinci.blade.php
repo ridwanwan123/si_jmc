@@ -16,7 +16,7 @@
             @forelse ($per->get($p, collect()) as $h)
                 @php $anggota = $h->anggota(); @endphp
                 <div class="{{ $loop->first ? '' : 'mt-4' }}">
-                    <a href="{{ rute('madrasah.show', $h->madrasah->nsm) }}" class="block break-words text-base font-bold leading-snug text-ink">{{ $h->madrasah->nama }}</a>
+                    <a href="{{ rute('madrasah.show', $h->madrasah->npsn) }}" class="block break-words text-base font-bold leading-snug text-ink">{{ $h->madrasah->nama }}</a>
                     @if ($h->tim() && $anggota)
                         <div class="mt-0.5 font-mono text-[11px] font-bold text-accent">TIM · {{ count($anggota) }} ANGGOTA</div>
                         <ol class="mt-1.5 space-y-0.5">

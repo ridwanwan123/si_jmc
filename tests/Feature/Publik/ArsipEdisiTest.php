@@ -13,10 +13,10 @@ beforeEach(function () {
     $this->travelTo(Carbon::create(2026, 11, 6, 10, 0, 0, 'Asia/Jakarta'));
 
     $this->aktif = Edisi::factory()->aktif()->create([
-        'tahun' => 2026, 'nama' => 'JMC 2026', 'tanggal_mulai' => '2026-11-03', 'tanggal_selesai' => '2026-11-07', 'jumlah_madrasah_peserta' => 148,
+        'tahun' => 2026, 'nama' => 'JMC 2026', 'tanggal_mulai' => '2026-11-03', 'tanggal_selesai' => '2026-11-07',
     ]);
     $this->lama = Edisi::factory()->create([
-        'tahun' => 2025, 'nama' => 'JMC 2025', 'tanggal_mulai' => '2025-11-04', 'tanggal_selesai' => '2025-11-08', 'jumlah_madrasah_peserta' => 131,
+        'tahun' => 2025, 'nama' => 'JMC 2025', 'tanggal_mulai' => '2025-11-04', 'tanggal_selesai' => '2025-11-08',
     ]);
 
     $this->cabor = Cabor::factory()->create();

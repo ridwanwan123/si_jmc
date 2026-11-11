@@ -3,48 +3,50 @@
 namespace App\Imports;
 
 use App\Enums\Jenjang;
+use App\Enums\Kota;
 use App\Enums\StatusMadrasah;
-use App\Enums\Wilayah;
 use App\Models\Madrasah;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Import madrasah. Kolom: NSM, Nama, Jenjang, Status, Wilayah.
- * NSM yang sudah ada diperbarui, NSM baru ditambahkan.
+ * Import madrasah. Kolom: NPSN, Nama, Jenjang, Status, Provinsi, Kota,
+ * Kecamatan, Kelurahan, Alamat. NPSN yang sudah ada diperbarui, NPSN baru ditambahkan.
+ * Kota menerima "Jakarta Timur" maupun format Kemenag "KOTA ADM. JAKARTA TIMUR".
  */
 class MadrasahImport extends ImportExcel
 {
     public static function header(): array
     {
-        return ['NSM', 'Nama', 'Jenjang', 'Status', 'Wilayah'];
+        return ['NPSN', 'Nama', 'Jenjang', 'Status', 'Provinsi', 'Kota', 'Kecamatan', 'Kelurahan', 'Alamat'];
     }
 
     public static function contoh(): array
     {
-        return ['111231710001', 'MTsN 1 Jakarta', 'MTs', 'Negeri', 'Jakarta Pusat'];
+        return ['20178214', 'MTsN 1 Jakarta', 'MTs', 'Negeri', 'DKI Jakarta', 'Jakarta Pusat', 'Gambir', 'Cideng', 'Jl. Contoh No. 1'];
     }
 
     public function import(string $path): LaporanImport
     {
         $laporan = new LaporanImport;
         $data = [];
-        $nsmDipakai = [];
+        $npsnDipakai = [];
 
         foreach ($this->baca($path) as $i => $row) {
             $no = $i + 2;
-            $nsm = $this->kolom($row, 'nsm');
+            $npsn = $this->kolom($row, 'npsn');
             $nama = $this->kolom($row, 'nama', 'nama_madrasah');
-            $jenjang = $this->cocokEnum(Jenjang::class, $this->kolom($row, 'jenjang'));
-            $status = $this->cocokEnum(StatusMadrasah::class, $this->kolom($row, 'status'));
-            $wilayah = $this->cocokEnum(Wilayah::class, $this->kolom($row, 'wilayah'));
+            $jenjang = $this->cocokEnum(Jenjang::class, $this->kolom($row, 'jenjang', 'jenjang_madrasah'));
+            $status = $this->cocokEnum(StatusMadrasah::class, $this->kolom($row, 'status', 'status_madrasah'));
+            $teksKota = $this->kolom($row, 'kota');
+            $kota = Kota::dariTeks($teksKota);
 
             $salah = [];
-            if ($nsm === null) {
-                $salah[] = 'NSM wajib diisi';
-            } elseif (mb_strlen($nsm) > 20) {
-                $salah[] = 'NSM maksimal 20 karakter';
-            } elseif (isset($nsmDipakai[$nsm])) {
-                $salah[] = "NSM {$nsm} sudah ada di baris {$nsmDipakai[$nsm]}";
+            if ($npsn === null) {
+                $salah[] = 'NPSN wajib diisi';
+            } elseif (mb_strlen($npsn) > 20) {
+                $salah[] = 'NPSN maksimal 20 karakter';
+            } elseif (isset($npsnDipakai[$npsn])) {
+                $salah[] = "NPSN {$npsn} sudah ada di baris {$npsnDipakai[$npsn]}";
             }
             if ($nama === null) {
                 $salah[] = 'nama wajib diisi';
@@ -55,8 +57,9 @@ class MadrasahImport extends ImportExcel
             if (! $status) {
                 $salah[] = 'status harus Negeri atau Swasta';
             }
-            if (! $wilayah) {
-                $salah[] = 'wilayah harus salah satu dari '.$this->daftar(Wilayah::cases());
+            if (! $kota) {
+                $salah[] = ($teksKota ? "kota \"{$teksKota}\" tidak dikenal" : 'kota wajib diisi')
+                    .'; pilihan: '.$this->daftar(Kota::cases());
             }
 
             if ($salah) {
@@ -65,8 +68,18 @@ class MadrasahImport extends ImportExcel
                 continue;
             }
 
-            $nsmDipakai[$nsm] = $no;
-            $data[] = compact('nsm', 'nama', 'jenjang', 'status', 'wilayah');
+            $npsnDipakai[$npsn] = $no;
+            $data[] = [
+                'npsn' => $npsn,
+                'nama' => $nama,
+                'jenjang' => $jenjang,
+                'status' => $status,
+                'provinsi' => $this->kolom($row, 'provinsi'),
+                'kota' => $kota,
+                'kecamatan' => $this->kolom($row, 'kecamatan'),
+                'kelurahan' => $this->kolom($row, 'kelurahan'),
+                'alamat_sekolah' => $this->kolom($row, 'alamat', 'alamat_sekolah'),
+            ];
         }
 
         if ($data === [] && $laporan->berhasil()) {
@@ -79,7 +92,7 @@ class MadrasahImport extends ImportExcel
 
         DB::transaction(function () use ($data, $laporan) {
             foreach ($data as $d) {
-                $m = Madrasah::updateOrCreate(['nsm' => $d['nsm']], $d);
+                $m = Madrasah::updateOrCreate(['npsn' => $d['npsn']], $d);
                 $m->wasRecentlyCreated ? $laporan->dibuat++ : $laporan->diperbarui++;
             }
         });

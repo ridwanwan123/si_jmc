@@ -21,7 +21,7 @@
                     @foreach ($opsi->groupBy(fn ($m) => $m->jenjang->value) as $kode => $grup)
                         <optgroup label="{{ $kode }}">
                             @foreach ($grup as $o)
-                                <option value="{{ rute('madrasah.show', $o->nsm) }}" @selected($o->is($madrasah))>{{ $o->nama }}</option>
+                                <option value="{{ rute('madrasah.show', $o->npsn) }}" @selected($o->is($madrasah))>{{ $o->nama }}</option>
                             @endforeach
                         </optgroup>
                     @endforeach
@@ -41,8 +41,8 @@
                 <div class="mt-2.5 flex flex-wrap gap-2">
                     <span class="rounded-full bg-ink px-2.5 py-1 text-[13px] font-bold text-white">{{ $madrasah->jenjang->value }}</span>
                     <span class="rounded-full border border-pill-line px-2.5 py-1 text-[13px] font-semibold">{{ $madrasah->status->value }}</span>
-                    <span class="rounded-full border border-pill-line px-2.5 py-1 text-[13px] font-semibold">{{ $madrasah->wilayah->value }}</span>
-                    <span class="rounded-full border border-pill-line px-2.5 py-1 font-mono text-xs font-bold">NSM {{ $madrasah->nsm }}</span>
+                    <span class="rounded-full border border-pill-line px-2.5 py-1 text-[13px] font-semibold">{{ $madrasah->kota->value }}</span>
+                    <span class="rounded-full border border-pill-line px-2.5 py-1 font-mono text-xs font-bold">NPSN {{ $madrasah->npsn }}</span>
                 </div>
             </div>
             <div class="flex-none sm:text-right">
@@ -134,7 +134,7 @@
                         </div>
                         @foreach ($riwayat as $r)
                             @php $ini = $r['edisi']->is($edisi); $rb = $r['baris']; @endphp
-                            <a href="{{ route('madrasah.show', ['madrasah' => $madrasah->nsm] + ($r['edisi']->is_aktif ? [] : ['edisi' => $r['edisi']->tahun])) }}"
+                            <a href="{{ route('madrasah.show', ['madrasah' => $madrasah->npsn] + ($r['edisi']->is_aktif ? [] : ['edisi' => $r['edisi']->tahun])) }}"
                                class="grid min-h-11 grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2 border-b border-line py-2 font-mono no-underline {{ $ini ? 'font-bold text-ink' : 'text-muted' }}">
                                 <span>{{ $r['edisi']->tahun }}</span>
                                 <span>{{ $rb ? $rb->emas.' · '.$rb->perak.' · '.$rb->perunggu : '—' }}</span>

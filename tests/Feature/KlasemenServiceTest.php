@@ -2,10 +2,12 @@
 
 use App\Data\BarisKlasemen;
 use App\Enums\Jenjang;
+use App\Enums\StatusPendaftaran;
 use App\Models\Cabor;
 use App\Models\Edisi;
 use App\Models\Lomba;
 use App\Models\Madrasah;
+use App\Models\Pendaftaran;
 use App\Services\KlasemenService;
 use Illuminate\Support\Carbon;
 
@@ -265,7 +267,6 @@ it('mengambil peringkat satu madrasah dan riwayat antar-edisi', function () {
 });
 
 it('menghitung angka ringkas edisi', function () {
-    $this->edisi->update(['jumlah_madrasah_peserta' => 120]);
     Lomba::factory()->for($this->edisi)->for($this->caborB)->count(2)->create(); // belum ada hasil
     $a = ($this->madrasah)('A');
     $b = ($this->madrasah)('B');
@@ -282,8 +283,41 @@ it('menghitung angka ringkas edisi', function () {
         'perunggu' => 1,
         'total_medali' => 4,
         'madrasah_peraih' => 2,
-        'madrasah_peserta' => 120,
+        'madrasah_peserta' => 2,
     ]);
+});
+
+it('menghitung madrasah peserta dari pendaftaran diverifikasi dan peraih medali', function () {
+    [$lomba2, $lomba3] = Lomba::factory()->for($this->edisi)->for($this->caborB)->count(2)->create()->all();
+    $daftar = function (Lomba $lomba, Madrasah $m, StatusPendaftaran $status) {
+        static $n = 0;
+        Pendaftaran::create([
+            'edisi_id' => $lomba->edisi_id, 'lomba_id' => $lomba->id, 'madrasah_id' => $m->id,
+            'nomor' => 'T-'.++$n, 'guru_nama' => 'Guru', 'guru_wa' => '0812', 'status' => $status,
+        ]);
+    };
+
+    $a = ($this->madrasah)('A'); // 2 lomba diverifikasi -> dihitung 1
+    $b = ($this->madrasah)('B'); // diverifikasi + juara -> dihitung 1
+    $c = ($this->madrasah)('C'); // juara tanpa pendaftaran -> dihitung
+    $d = ($this->madrasah)('D'); // masih menunggu -> tidak dihitung
+    $e = ($this->madrasah)('E'); // ditolak -> tidak dihitung
+
+    $daftar($this->lomba, $a, StatusPendaftaran::Diverifikasi);
+    $daftar($lomba2, $a, StatusPendaftaran::Diverifikasi);
+    $daftar($this->lomba, $b, StatusPendaftaran::Diverifikasi);
+    $daftar($lomba3, $d, StatusPendaftaran::Menunggu);
+    $daftar($lomba3, $e, StatusPendaftaran::Ditolak);
+    juara($this->lomba, $b, 1);
+    juara($this->lomba, $c, 2);
+
+    // Pendaftaran di edisi lain tidak ikut dihitung.
+    $lain = Edisi::factory()->create(['tahun' => 2020]);
+    $daftar(Lomba::factory()->for($lain)->for($this->caborB)->create(), $d, StatusPendaftaran::Diverifikasi);
+
+    expect($this->service->jumlahMadrasahPeserta($this->edisi))->toBe(3)
+        ->and($this->service->ringkasan($this->edisi)['madrasah_peserta'])->toBe(3)
+        ->and($this->service->jumlahMadrasahPeserta($lain))->toBe(1);
 });
 
 it('menampilkan waktu terakhir diperbarui dalam WIB', function () {

@@ -19,6 +19,15 @@ return [
         'kontak_panitia' => env('JMC_KONTAK_PANITIA'),
     ],
 
+    // Penyelenggara (footer publik). Ganti lewat .env bila alamat/akun resmi berbeda.
+    'penyelenggara' => [
+        'nama' => 'Bidang Pendidikan Madrasah',
+        'instansi' => 'Kanwil Kementerian Agama Provinsi DKI Jakarta',
+        'alamat' => env('JMC_ALAMAT', 'Jl. DR. Soepomo No. 1C, Tebet, Jakarta Selatan 12810'),
+        'instagram' => env('JMC_INSTAGRAM', 'https://www.instagram.com/kemenagdki'),
+        'youtube' => env('JMC_YOUTUBE', 'https://www.youtube.com/@kemenagdki'),
+    ],
+
     // Akun admin awal (dipakai AdminSeeder).
     'admin' => [
         'name' => env('ADMIN_NAME', 'Admin JMC'),

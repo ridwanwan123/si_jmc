@@ -42,9 +42,9 @@
             <dl class="mt-6">
                 @php
                     $baris = [
-                        'MADRASAH' => $p->madrasah->nama.' ('.$p->madrasah->jenjang->value.') · NSM '.$p->madrasah->nsm,
+                        'MADRASAH' => $p->madrasah->nama.' ('.$p->madrasah->jenjang->value.') · NPSN '.$p->madrasah->npsn,
                         'CABOR' => $p->lomba->cabor->nama,
-                        'MATA LOMBA' => $p->lomba->namaLengkap().' · '.($p->lomba->tim() ? 'Tim '.$p->lomba->jumlah_anggota.' orang' : 'Perorangan'),
+                        'MATA LOMBA' => $p->lomba->namaLengkap().' · '.$p->lomba->labelAnggota(),
                         'PENDAMPING' => $p->guru_nama.' · '.$p->guru_wa,
                         'TANGGAL DAFTAR' => $p->created_at->timezone(config('jmc.timezone'))->format('d.m.Y · H:i').' WIB',
                         'STATUS' => $p->status->label(),
@@ -67,7 +67,12 @@
                     @foreach ($p->peserta as $s)
                         <tr class="border-b border-garis-halus">
                             <td class="py-2.5 font-mono text-xs font-bold text-muted">{{ nomor($loop->iteration) }}</td>
-                            <td class="py-2.5 font-semibold">{{ $s->nama }}</td>
+                            <td class="py-2.5 font-semibold">
+                                {{ $s->nama }}
+                                @if ($p->lomba->tim() && $loop->first)
+                                    <span class="ml-1.5 rounded-full border border-ink px-2 py-0.5 align-middle font-mono text-[10px] font-bold">KAPTEN</span>
+                                @endif
+                            </td>
                             <td class="py-2.5 font-mono">{{ $s->nisn }}</td>
                         </tr>
                     @endforeach

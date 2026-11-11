@@ -16,7 +16,7 @@
                 <span class="font-mono text-[11px] font-bold text-muted" aria-hidden="true">JUARA {{ $p }}</span>
             </div>
             @forelse ($per->get($p, collect()) as $h)
-                <a href="{{ rute('madrasah.show', $h->madrasah->nsm) }}"
+                <a href="{{ rute('madrasah.show', $h->madrasah->npsn) }}"
                    class="block break-words leading-snug text-ink {{ $p === 1 ? 'font-bold' : '' }} {{ ! $loop->first ? 'mt-1' : '' }}">{{ $h->madrasah->nama }}</a>
             @empty
                 <span class="text-muted">—</span>

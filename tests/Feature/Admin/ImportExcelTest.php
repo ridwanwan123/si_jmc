@@ -3,9 +3,12 @@
 use App\Exports\TemplateExport;
 use App\Filament\Resources\Lombas\Pages\ListLombas;
 use App\Filament\Resources\Madrasahs\Pages\ListMadrasahs;
+use App\Filament\Resources\MataLombas\Pages\ListMataLombas;
+use App\Enums\Kota;
 use App\Imports\HasilImport;
 use App\Imports\LombaImport;
 use App\Imports\MadrasahImport;
+use App\Imports\MataLombaImport;
 use App\Models\Cabor;
 use App\Models\Edisi;
 use App\Models\Hasil;
@@ -34,31 +37,48 @@ beforeEach(function () {
 });
 
 describe('import madrasah', function () {
-    it('menambah dan memperbarui madrasah berdasarkan NSM', function () {
-        Madrasah::factory()->create(['nsm' => '111231710001', 'nama' => 'Nama Lama']);
+    it('menambah dan memperbarui madrasah berdasarkan NPSN', function () {
+        Madrasah::factory()->create(['npsn' => '20178214', 'nama' => 'Nama Lama']);
 
         $laporan = app(MadrasahImport::class)->import(xlsx(MadrasahImport::header(), [
-            ['111231710001', 'MTsN 1 Jakarta', 'mts', 'negeri', 'jakarta pusat'],
-            ['101231710002', 'MIN 2 Jakarta', 'MI', 'Negeri', 'Jakarta Timur'],
-            ['', '', '', '', ''], // baris kosong diabaikan
+            ['20178214', 'MTsN 1 Jakarta', 'mts', 'negeri', 'DKI Jakarta', 'jakarta pusat', 'Gambir', 'Cideng', 'Jl. A'],
+            ['60706559', 'MIN 2 Jakarta', 'MI', 'Negeri', '', 'Jakarta Timur', '', '', ''],
+            ['', '', '', '', '', '', '', '', ''], // baris kosong diabaikan
         ]));
+
+        $mtsn = Madrasah::where('npsn', '20178214')->first();
+        $min = Madrasah::where('npsn', '60706559')->first();
 
         expect($laporan->berhasil())->toBeTrue()
             ->and([$laporan->dibuat, $laporan->diperbarui])->toBe([1, 1])
-            ->and(Madrasah::where('nsm', '111231710001')->first()->nama)->toBe('MTsN 1 Jakarta')
-            ->and(Madrasah::where('nsm', '101231710002')->first()->jenjang->value)->toBe('MI');
+            ->and($mtsn->nama)->toBe('MTsN 1 Jakarta')
+            ->and([$mtsn->provinsi, $mtsn->kota, $mtsn->kecamatan, $mtsn->kelurahan, $mtsn->alamat_sekolah])
+            ->toBe(['DKI Jakarta', Kota::JakartaPusat, 'Gambir', 'Cideng', 'Jl. A'])
+            ->and($min->jenjang->value)->toBe('MI')
+            ->and([$min->provinsi, $min->kecamatan, $min->alamat_sekolah])->toBe([null, null, null]);
+    });
+
+    it('menerima format kota dari data Kemenag (si_presma)', function () {
+        $laporan = app(MadrasahImport::class)->import(xlsx(MadrasahImport::header(), [
+            ['60725022', 'MAS PKU', 'MA', 'Swasta', 'DAERAH KHUSUS IBUKOTA JAKARTA', 'ADM. KEP. SERIBU', '', '', ''],
+            ['69733094', 'RA YAMPI', 'RA', 'Swasta', '', 'KOTA ADM. JAKARTA UTARA', '', '', ''],
+        ]));
+
+        expect($laporan->berhasil())->toBeTrue()
+            ->and(Madrasah::where('npsn', '60725022')->first()->kota)->toBe(Kota::KepulauanSeribu)
+            ->and(Madrasah::where('npsn', '69733094')->first()->kota)->toBe(Kota::JakartaUtara);
     });
 
     it('tidak menyimpan apa pun jika ada baris yang salah', function () {
         $laporan = app(MadrasahImport::class)->import(xlsx(MadrasahImport::header(), [
-            ['101231710002', 'MIN 2 Jakarta', 'MI', 'Negeri', 'Jakarta Timur'],
-            ['101231710003', 'MIN 3', 'SD', 'Negeri', 'Bandung'],
-            ['101231710002', 'Duplikat', 'MI', 'Swasta', 'Jakarta Timur'],
+            ['101231710002', 'MIN 2 Jakarta', 'MI', 'Negeri', '', 'Jakarta Timur', '', '', ''],
+            ['101231710003', 'MIN 3', 'SD', 'Negeri', '', 'Bandung', '', '', ''],
+            ['101231710002', 'Duplikat', 'MI', 'Swasta', '', 'Jakarta Timur', '', '', ''],
         ]));
 
         expect($laporan->berhasil())->toBeFalse()
             ->and($laporan->errors)->toHaveCount(2)
-            ->and($laporan->errors[0])->toStartWith('Baris 3:')->toContain('jenjang')->toContain('wilayah')
+            ->and($laporan->errors[0])->toStartWith('Baris 3:')->toContain('jenjang')->toContain('kota "Bandung" tidak dikenal')
             ->and($laporan->errors[1])->toContain('sudah ada di baris 2')
             ->and(Madrasah::count())->toBe(0);
     });
@@ -139,9 +159,9 @@ describe('import hasil', function () {
         $this->lombaLain = Lomba::factory()->for($this->edisi)->create([
             'cabor_id' => $olahraga, 'nama' => 'Futsal', 'jenjang' => 'MA', 'kategori' => 'Beregu',
         ]);
-        $this->a = Madrasah::factory()->create(['nsm' => '121231710001']);
-        $this->b = Madrasah::factory()->create(['nsm' => '121231710002']);
-        $this->c = Madrasah::factory()->create(['nsm' => '131231710003']);
+        $this->a = Madrasah::factory()->create(['npsn' => '121231710001']);
+        $this->b = Madrasah::factory()->create(['npsn' => '121231710002']);
+        $this->c = Madrasah::factory()->create(['npsn' => '131231710003']);
     });
 
     it('mengimpor juara ganda satu baris per juara', function () {
@@ -188,7 +208,7 @@ describe('import hasil', function () {
             ->and(Hasil::count())->toBe(0);
     });
 
-    it('melaporkan NSM, lomba, dan peringkat yang salah dengan nomor baris', function () {
+    it('melaporkan NPSN, lomba, dan peringkat yang salah dengan nomor baris', function () {
         $laporan = app(HasilImport::class)->import($this->edisi, xlsx(HasilImport::header(), [
             ['Olahraga', 'Tenis Meja', 'MTs', 'Putri', '1', '999', 'X'],
             ['Olahraga', 'Bulu Tangkis', 'MTs', 'Putri', '1', '121231710001', 'Y'],
@@ -196,7 +216,7 @@ describe('import hasil', function () {
         ]));
 
         expect($laporan->errors)->toHaveCount(3)
-            ->and($laporan->errors[0])->toBe('Baris 2: madrasah dengan NSM 999 tidak ditemukan.')
+            ->and($laporan->errors[0])->toBe('Baris 2: madrasah dengan NPSN 999 tidak ditemukan.')
             ->and($laporan->errors[1])->toStartWith('Baris 3:')->toContain('Bulu Tangkis')->toContain('tidak ada di JMC 2026')
             ->and($laporan->errors[2])->toBe('Baris 4: peringkat harus 1, 2, atau 3.')
             ->and(Hasil::count())->toBe(0);
@@ -226,5 +246,36 @@ describe('tombol template di admin', function () {
         Livewire::test(ListLombas::class)
             ->assertActionVisible('importLomba')
             ->assertActionVisible('importHasil');
+    });
+});
+
+describe('aksi import excel di admin', function () {
+    beforeEach(fn () => $this->actingAs(User::factory()->create()));
+
+    $upload = fn (array $rows) => \Illuminate\Http\UploadedFile::fake()->createWithContent(
+        'mata-lomba.xlsx',
+        file_get_contents(xlsx(MataLombaImport::header(), $rows)),
+    );
+
+    it('mengimpor mata lomba lewat tombol import', function () use ($upload) {
+        Livewire::test(ListMataLombas::class)
+            ->mountAction('importMataLomba')
+            ->fillForm(['file' => $upload([['Olahraga', 'Tenis Meja', 'MTs', 'Putri', '1', '', '', '']])])
+            ->callMountedAction()
+            ->assertHasNoFormErrors();
+
+        expect(MataLomba::where('nama', 'Tenis Meja')->exists())->toBeTrue();
+    });
+
+    it('file tetap bisa di-import ulang setelah import gagal', function () use ($upload) {
+        $lw = Livewire::test(ListMataLombas::class)
+            ->mountAction('importMataLomba')
+            ->fillForm(['file' => $upload([['Cabor Tidak Ada', 'Tenis Meja', 'MTs', 'Putri', '1', '', '', '']])])
+            ->callMountedAction();
+
+        // Submit ulang file yang sama: tidak boleh FileNotFoundException.
+        $lw->callMountedAction();
+
+        expect(MataLomba::count())->toBe(0);
     });
 });

@@ -30,15 +30,19 @@ describe('seeder', function () {
             ->and($cabor->last()->nomor())->toBe('07');
     });
 
-    it('menjalankan DatabaseSeeder: hanya 7 cabor dan satu admin, tanpa data contoh', function () {
+    it('menjalankan DatabaseSeeder: cabor, superadmin, madrasah, mata lomba, edisi aktif + lombanya, tanpa data contoh', function () {
         $this->seed(DatabaseSeeder::class);
 
         expect(Cabor::count())->toBe(7)
             ->and(User::count())->toBe(1)
-            ->and(Edisi::count())->toBe(0)
-            ->and(MataLomba::count())->toBe(0)
-            ->and(Madrasah::count())->toBe(0)
-            ->and(Lomba::count())->toBe(0);
+            ->and(User::first()->isSuperadmin())->toBeTrue()
+            ->and(Madrasah::count())->toBe(1815)
+            ->and(MataLomba::count())->toBe(92)
+            ->and(Edisi::where('is_aktif', true)->value('tahun'))->toBe(2026)
+            ->and(Lomba::count())->toBe(92)
+            ->and(Lomba::whereColumn('pengelola_cabor_id', '!=', 'cabor_id')->count())->toBe(17) // lomba GTK
+            ->and(\App\Models\Hasil::count())->toBe(0)
+            ->and(\App\Models\Berita::count())->toBe(0);
     });
 });
 

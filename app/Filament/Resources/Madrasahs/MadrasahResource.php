@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Madrasahs;
 
 use App\Enums\Jenjang;
 use App\Enums\StatusMadrasah;
-use App\Enums\Wilayah;
+use App\Enums\Kota;
 use App\Filament\Resources\Madrasahs\Pages\CreateMadrasah;
 use App\Filament\Resources\Madrasahs\Pages\EditMadrasah;
 use App\Filament\Resources\Madrasahs\Pages\ListMadrasahs;
@@ -14,6 +14,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -29,6 +30,12 @@ use UnitEnum;
 class MadrasahResource extends Resource
 {
     protected static ?string $model = Madrasah::class;
+
+    /** Master data hanya untuk superadmin. */
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->bolehKelolaMaster();
+    }
 
     protected static ?string $slug = 'madrasah';
 
@@ -52,8 +59,8 @@ class MadrasahResource extends Resource
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
-                        TextInput::make('nsm')
-                            ->label('NSM')
+                        TextInput::make('npsn')
+                            ->label('NPSN')
                             ->required()
                             ->maxLength(20)
                             ->unique(ignoreRecord: true),
@@ -66,14 +73,31 @@ class MadrasahResource extends Resource
                         Select::make('status')
                             ->options(StatusMadrasah::options())
                             ->required(),
-                        Select::make('wilayah')
-                            ->options(Wilayah::options())
-                            ->required(),
                         FileUpload::make('logo')
                             ->image()
                             ->disk('public')
                             ->directory('madrasah-logo')
                             ->maxSize(1024),
+                    ]),
+                Section::make('Alamat')
+                    ->columns(2)
+                    ->columnSpanFull()
+                    ->schema([
+                        TextInput::make('provinsi')
+                            ->default('DKI Jakarta')
+                            ->maxLength(255),
+                        Select::make('kota')
+                            ->label('Kota/Kabupaten')
+                            ->options(Kota::options())
+                            ->required(),
+                        TextInput::make('kecamatan')
+                            ->maxLength(255),
+                        TextInput::make('kelurahan')
+                            ->maxLength(255),
+                        Textarea::make('alamat_sekolah')
+                            ->label('Alamat sekolah')
+                            ->rows(2)
+                            ->columnSpanFull(),
                     ]),
             ]);
     }
@@ -84,8 +108,8 @@ class MadrasahResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->withCount('hasil'))
             ->defaultSort('nama')
             ->columns([
-                TextColumn::make('nsm')
-                    ->label('NSM')
+                TextColumn::make('npsn')
+                    ->label('NPSN')
                     ->searchable()
                     ->fontFamily('mono'),
                 TextColumn::make('nama')
@@ -95,8 +119,14 @@ class MadrasahResource extends Resource
                     ->badge()
                     ->sortable(),
                 TextColumn::make('status'),
-                TextColumn::make('wilayah')
+                TextColumn::make('kota')
                     ->toggleable(),
+                TextColumn::make('kecamatan')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('kelurahan')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('hasil_count')
                     ->label('Medali')
                     ->numeric()
@@ -105,7 +135,7 @@ class MadrasahResource extends Resource
             ->filters([
                 SelectFilter::make('jenjang')->options(Jenjang::options()),
                 SelectFilter::make('status')->options(StatusMadrasah::options()),
-                SelectFilter::make('wilayah')->options(Wilayah::options()),
+                SelectFilter::make('kota')->options(Kota::options()),
             ])
             ->recordActions([
                 EditAction::make(),

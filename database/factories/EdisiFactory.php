@@ -22,7 +22,6 @@ class EdisiFactory extends Factory
             'tanggal_mulai' => "{$tahun}-11-03",
             'tanggal_selesai' => "{$tahun}-11-07",
             'lokasi' => 'Jakarta',
-            'jumlah_madrasah_peserta' => $this->faker->numberBetween(50, 300),
             'is_aktif' => false,
         ];
     }

@@ -41,7 +41,7 @@
                         <dl class="mt-3 grid grid-cols-3 gap-3 font-mono text-sm">
                             <div><dt class="text-[11px] font-bold text-muted">LOMBA</dt><dd class="text-lg font-bold">{{ $r['jumlah_lomba'] }}</dd></div>
                             <div><dt class="text-[11px] font-bold text-muted">MEDALI</dt><dd class="text-lg font-bold">{{ $r['total_medali'] }}</dd></div>
-                            <div><dt class="text-[11px] font-bold text-muted">MADRASAH</dt><dd class="text-lg font-bold">{{ $r['madrasah_peserta'] ?: $r['madrasah_peraih'] }}</dd></div>
+                            <div><dt class="text-[11px] font-bold text-muted">MADRASAH</dt><dd class="text-lg font-bold">{{ $r['madrasah_peserta'] }}</dd></div>
                         </dl>
                     </div>
 
@@ -49,7 +49,7 @@
                     <div class="min-w-0">
                         <div class="font-mono text-[11px] font-bold text-muted">{{ $e->selesai() ? 'JUARA UMUM' : 'PEMUNCAK SEMENTARA' }}</div>
                         @forelse ($d['juaraUmum'] as $j)
-                            <a href="{{ route('madrasah.show', ['madrasah' => $j->nsm] + $d['param']) }}" class="mt-1.5 flex items-center gap-2.5 text-ink no-underline">
+                            <a href="{{ route('madrasah.show', ['madrasah' => $j->npsn] + $d['param']) }}" class="mt-1.5 flex items-center gap-2.5 text-ink no-underline">
                                 <x-medali :peringkat="1" :ukuran="20" />
                                 <span class="min-w-0">
                                     <span class="block truncate font-bold">{{ $j->nama }}</span>

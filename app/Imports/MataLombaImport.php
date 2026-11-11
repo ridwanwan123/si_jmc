@@ -17,7 +17,7 @@ class MataLombaImport extends ImportExcel
 {
     public static function header(): array
     {
-        return ['Cabor', 'Nama', 'Jenjang', 'Kategori', 'Jumlah Anggota', 'Kuota Juara 1', 'Kuota Juara 2', 'Kuota Juara 3'];
+        return ['Cabor', 'Nama', 'Jenjang', 'Kategori', 'Maksimal Anggota', 'Kuota Juara 1', 'Kuota Juara 2', 'Kuota Juara 3'];
     }
 
     public static function contoh(): array
@@ -54,11 +54,11 @@ class MataLombaImport extends ImportExcel
                 $salah[] = 'kategori harus salah satu dari '.$this->daftar(Kategori::cases());
             }
             [$kuota, $salahKuota] = $this->kuota($row);
-            // Jumlah anggota (opsional): kosong = 1 (perorangan).
-            $anggotaMentah = $this->kolom($row, 'jumlah_anggota', 'anggota');
+            // Maksimal anggota (opsional): kosong = 1 (perorangan). Header lama "Jumlah Anggota" tetap diterima.
+            $anggotaMentah = $this->kolom($row, 'maksimal_anggota', 'jumlah_anggota', 'anggota');
             $anggota = $anggotaMentah === null ? 1 : (ctype_digit((string) $anggotaMentah) ? (int) $anggotaMentah : 0);
             if ($anggota < 1 || $anggota > 30) {
-                $salah[] = 'jumlah anggota harus angka 1–30';
+                $salah[] = 'maksimal anggota harus angka 1–30';
             }
             array_push($salah, ...$salahKuota);
 

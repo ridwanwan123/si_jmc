@@ -86,7 +86,7 @@ Alpine.data('formDaftar', (data) => ({
     cocokCari() {
         const kata = this.cari.trim().toLowerCase();
         if (!kata) return this.data.madrasah;
-        return this.data.madrasah.filter((m) => m.nama.toLowerCase().includes(kata) || m.nsm.startsWith(kata));
+        return this.data.madrasah.filter((m) => m.nama.toLowerCase().includes(kata) || m.npsn.startsWith(kata));
     },
     hasilCari() {
         const hasil = this.cocokCari().slice(0, this.batasCari);
@@ -121,8 +121,26 @@ Alpine.data('formDaftar', (data) => ({
     nomorValid(n) {
         return (this.gtk() ? /^\d{16}$/ : /^\d{10}$/).test(n);
     },
+    /** Maksimal anggota lomba (1 = perorangan). */
     jumlahAnggota() {
         return this.lombaTerpilih()?.anggota ?? 1;
+    },
+    tim() {
+        return this.jumlahAnggota() > 1;
+    },
+    labelPeserta(i) {
+        if (!this.tim()) return 'Peserta';
+        return i === 0 ? 'Kapten' : 'Anggota ' + (i + 1);
+    },
+    bisaTambahAnggota() {
+        return this.tim() && this.peserta.length < this.jumlahAnggota();
+    },
+    tambahAnggota() {
+        if (this.bisaTambahAnggota()) this.peserta.push({ nama: '', nisn: '' });
+    },
+    hapusAnggota(i) {
+        // Kapten (baris pertama) tidak bisa dihapus.
+        if (i > 0) this.peserta.splice(i, 1);
     },
 
     pilihMadrasah(id) {
@@ -139,9 +157,11 @@ Alpine.data('formDaftar', (data) => ({
     pilihLomba(id) {
         this.pilihan.lomba = id;
         this.galat = '';
-        // Sesuaikan jumlah baris peserta, pertahankan isian yang sudah ada.
-        const n = this.jumlahAnggota();
-        this.peserta = Array.from({ length: n }, (_, i) => this.peserta[i] ?? { nama: '', nisn: '' });
+        // Mulai dari kapten saja; anggota lain ditambah sesuai kebutuhan (maks. jumlahAnggota).
+        // Isian yang sudah ada dipertahankan selama masih dalam batas.
+        const isi = this.peserta.filter((p, i) => i === 0 || p.nama || p.nisn);
+        this.peserta = isi.slice(0, this.jumlahAnggota());
+        if (this.peserta.length === 0) this.peserta = [{ nama: '', nisn: '' }];
     },
     pilihSurat(e) {
         const file = e.target.files[0] ?? null;
@@ -175,7 +195,10 @@ Alpine.data('formDaftar', (data) => ({
             case 2:
                 return this.pilihan.cabor ? '' : 'Pilih cabang lomba terlebih dahulu.';
             case 3:
-                return this.pilihan.lomba ? '' : 'Pilih mata lomba terlebih dahulu.';
+                if (!this.pilihan.lomba) return 'Pilih mata lomba terlebih dahulu.';
+                return this.sudahTerdaftar(this.pilihan.lomba)
+                    ? 'Madrasah ini sudah terdaftar di mata lomba tersebut. Satu madrasah hanya boleh mengirim satu peserta/tim per mata lomba.'
+                    : '';
             case 4:
                 if (this.peserta.some((p) => !p.nama)) return 'Isi nama lengkap semua peserta.';
                 if (this.peserta.some((p) => !this.nomorValid(p.nisn))) return this.gtk() ? 'NUPTK harus 16 digit angka.' : 'NISN harus 10 digit angka.';
@@ -282,12 +305,16 @@ Alpine.data('formDaftar', (data) => ({
     ringkasan() {
         const m = this.madrasahTerpilih();
         const l = this.lombaTerpilih();
-        const tim = this.jumlahAnggota() > 1;
+        const tim = this.tim();
         return [
             { label: 'MADRASAH', isi: [`${m?.nama} (${m?.jenjang})`], ke: 1 },
             { label: 'CABOR', isi: [this.caborTerpilih()?.nama], ke: 2 },
-            { label: 'MATA LOMBA', isi: [`${l?.nama} ${l?.kategori} · ${tim ? 'Tim ' + this.jumlahAnggota() + ' orang' : 'Perorangan'}`], ke: 3 },
-            { label: tim ? 'ANGGOTA TIM' : 'PESERTA', isi: this.peserta.map((p) => `${p.nama} · ${this.labelNomor()} ${p.nisn}`), ke: 4 },
+            { label: 'MATA LOMBA', isi: [`${l?.nama} ${l?.kategori} · ${tim ? 'Tim maks. ' + this.jumlahAnggota() + ' orang' : 'Perorangan'}`], ke: 3 },
+            {
+                label: tim ? `ANGGOTA TIM (${this.peserta.length} ORANG)` : 'PESERTA',
+                isi: this.peserta.map((p, i) => `${tim && i === 0 ? 'Kapten: ' : ''}${p.nama} · ${this.labelNomor()} ${p.nisn}`),
+                ke: 4,
+            },
             { label: 'PENDAMPING', isi: [`${this.guru.nama} · ${this.guru.wa}`, `Surat tugas: ${this.guru.surat}`], ke: 4 },
         ];
     },

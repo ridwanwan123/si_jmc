@@ -8,6 +8,7 @@ use App\Models\Edisi;
 use App\Models\GaleriAlbum;
 use App\Models\Pendaftaran;
 use App\Models\PendaftaranPeserta;
+use App\Services\BeritaService;
 use App\Services\HasilPublikService;
 use App\Services\KlasemenService;
 use App\Support\EdisiTerpilih;
@@ -16,9 +17,10 @@ use Illuminate\Support\Collection;
 
 class BerandaController extends Controller
 {
-    public function __invoke(EdisiTerpilih $edisiTerpilih, KlasemenService $klasemen, HasilPublikService $publik): View
+    public function __invoke(EdisiTerpilih $edisiTerpilih, KlasemenService $klasemen, HasilPublikService $publik, BeritaService $berita): View
     {
         $edisi = $edisiTerpilih->get();
+        $beritaUtama = $berita->unggulan($edisi);
         $baris = $klasemen->klasemen($edisi);
         $top = $baris->take(5);
 
@@ -34,6 +36,9 @@ class BerandaController extends Controller
             'cabor' => $publik->caborDenganJumlah($edisi),
             'mataLomba' => $publik->mataLombaPerCabor($edisi),
             'galeri' => $this->galeriPilihan($edisi),
+            // Berita: 1 unggulan besar + 3 terbaru lainnya.
+            'beritaUtama' => $beritaUtama,
+            'beritaLain' => $beritaUtama ? $berita->query($edisi)->whereKeyNot($beritaUtama->id)->limit(3)->get() : collect(),
             'pendaftaran' => $this->ringkasanPendaftaran($edisi),
         ]);
     }

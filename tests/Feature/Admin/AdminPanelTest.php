@@ -49,7 +49,7 @@ describe('edisi', function () {
         $lama = Edisi::factory()->aktif()->create(['tahun' => 2025]);
 
         Livewire::test(CreateEdisi::class)
-            ->fillForm(['tahun' => 2026, 'nama' => 'JMC 2026', 'jumlah_madrasah_peserta' => 150, 'is_aktif' => true])
+            ->fillForm(['tahun' => 2026, 'nama' => 'JMC 2026', 'is_aktif' => true])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -61,7 +61,7 @@ describe('edisi', function () {
         Edisi::factory()->create(['tahun' => 2026]);
 
         Livewire::test(CreateEdisi::class)
-            ->fillForm(['tahun' => 2026, 'nama' => 'JMC 2026', 'jumlah_madrasah_peserta' => 0])
+            ->fillForm(['tahun' => 2026, 'nama' => 'JMC 2026'])
             ->call('create')
             ->assertHasFormErrors(['tahun' => 'unique']);
     });
@@ -88,15 +88,15 @@ describe('edisi', function () {
 describe('madrasah', function () {
     beforeEach(fn () => $this->actingAs($this->admin));
 
-    it('membuat madrasah dan menolak NSM duplikat', function () {
-        $data = ['nsm' => '121131710001', 'nama' => 'MTsN 1 Jakarta', 'jenjang' => 'MTs', 'status' => 'Negeri', 'wilayah' => 'Jakarta Pusat'];
+    it('membuat madrasah dan menolak NPSN duplikat', function () {
+        $data = ['npsn' => '121131710001', 'nama' => 'MTsN 1 Jakarta', 'jenjang' => 'MTs', 'status' => 'Negeri', 'kota' => 'Jakarta Pusat'];
 
         Livewire::test(CreateMadrasah::class)->fillForm($data)->call('create')->assertHasNoFormErrors();
 
         Livewire::test(CreateMadrasah::class)
             ->fillForm(['nama' => 'Lain'] + $data)
             ->call('create')
-            ->assertHasFormErrors(['nsm' => 'unique']);
+            ->assertHasFormErrors(['npsn' => 'unique']);
 
         expect(Madrasah::count())->toBe(1);
     });
