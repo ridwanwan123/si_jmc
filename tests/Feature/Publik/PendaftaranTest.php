@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Jenjang;
+use App\Enums\Role;
 use App\Enums\StatusPendaftaran;
 use App\Filament\Pages\InputJuara;
 use App\Filament\Pages\KelolaCabor;
@@ -234,7 +235,7 @@ describe('form /daftar', function () {
             'peserta.0.nisn', 'peserta.1.nama', 'guru_wa', 'surat_tugas', 'setuju',
         ]);
 
-        $this->postJson('/daftar', kirimanDaftar(['surat_tugas' => UploadedFile::fake()->create('besar.pdf', 3000, 'application/pdf')]))
+        $this->postJson('/daftar', kirimanDaftar(['surat_tugas' => UploadedFile::fake()->create('besar.pdf', 600, 'application/pdf')]))
             ->assertUnprocessable()->assertJsonValidationErrors(['surat_tugas']);
     });
 
@@ -439,5 +440,31 @@ describe('juara dari pendaftaran', function () {
             ->assertHasNoFormErrors();
 
         expect($this->cc->hasil()->first()->nama_peserta)->toBe("Rizky Pratama\nAnnisa Rahma\nFarhan Hakim");
+    });
+});
+
+describe('lihat surat tugas di admin', function () {
+    beforeEach(function () {
+        $this->daftar = app(PendaftaranService::class)->daftar($this->edisi, kirimanDaftar(), UploadedFile::fake()->create('s.pdf', 10, 'application/pdf'));
+    });
+
+    it('menampilkan PDF di browser untuk admin yang berwenang', function () {
+        $this->actingAs(User::factory()->create());
+
+        $this->get(route('admin.surat-tugas', $this->daftar))->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'inline; filename=surat-tugas-JMC26-0001.pdf');
+
+        Livewire::test(ViewPendaftaran::class, ['record' => $this->daftar->getRouteKey()])
+            ->assertActionVisible('lihatSurat')
+            ->assertSee('Lihat surat tugas (PDF)');
+    });
+
+    it('mengarahkan tamu ke login dan menolak admin cabor lain', function () {
+        $this->get(route('admin.surat-tugas', $this->daftar))->assertRedirect(route('filament.admin.auth.login'));
+
+        $olahraga = Cabor::where('slug', 'olahraga')->first();
+        $this->actingAs(User::factory()->create(['role' => Role::AdminCabor, 'cabor_id' => $olahraga->id]));
+        $this->get(route('admin.surat-tugas', $this->daftar))->assertForbidden();
     });
 });

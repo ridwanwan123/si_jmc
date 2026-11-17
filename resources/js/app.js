@@ -173,8 +173,8 @@ Alpine.data('formDaftar', (data) => ({
             e.target.value = '';
             return;
         }
-        if (file.size > 2 * 1024 * 1024) {
-            this.galat = 'Ukuran surat tugas maksimal 2 MB.';
+        if (file.size > 500 * 1024) {
+            this.galat = 'Ukuran surat tugas maksimal 500 KB.';
             e.target.value = '';
             return;
         }

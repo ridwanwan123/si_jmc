@@ -115,7 +115,7 @@ class GaleriAlbumResource extends Resource
                     ]),
 
                 Section::make('Tambah foto')
-                    ->description('Pilih banyak foto sekaligus (JPG, PNG, atau WebP, maks. 15 MB per foto). Saat disimpan, foto dikompres ke lebar maks. 1920px dan dibuat thumbnail 600px, format WebP.')
+                    ->description('Pilih banyak foto sekaligus (JPG, PNG, WebP, atau HEIC dari iPhone, maks. 10 MB per foto). Saat disimpan, foto dikompres ke lebar maks. 1920px dan dibuat thumbnail 600px, format WebP.')
                     ->visibleOn('edit')
                     ->columnSpanFull()
                     ->schema([
@@ -123,7 +123,7 @@ class GaleriAlbumResource extends Resource
                             ->hiddenLabel()
                             ->multiple()
                             ->image()
-                            ->acceptedFileTypes(GaleriService::MIME)
+                            ->acceptedFileTypes(GaleriService::MIME_PILIH)
                             ->maxSize(GaleriService::MAKS_KB)
                             ->maxFiles(50)
                             ->disk('local')

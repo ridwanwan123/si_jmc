@@ -31,9 +31,12 @@ class GaleriService
     public const KUALITAS_THUMB = 75;
 
     /** Ukuran file maksimal (KB) dan tipe yang diterima. */
-    public const MAKS_KB = 15360;
+    public const MAKS_KB = 10240;
 
     public const MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
+    /** Yang boleh dipilih di form: + HEIC/HEIF (iPhone), yang diubah ke JPG di browser (resources/js/admin-heic.js). */
+    public const MIME_PILIH = [...self::MIME, 'image/heic', 'image/heif'];
 
     private ImageManager $manager;
 
@@ -131,8 +134,8 @@ class GaleriService
     {
         $salah = match (true) {
             ! is_file($path) => 'File tidak ditemukan.',
-            filesize($path) > self::MAKS_KB * 1024 => "{$nama}: ukuran maksimal 15 MB.",
-            ! in_array(mime_content_type($path), self::MIME, true) => "{$nama}: hanya JPG, PNG, atau WebP.",
+            filesize($path) > self::MAKS_KB * 1024 => "{$nama}: ukuran maksimal 10 MB.",
+            ! in_array(mime_content_type($path), self::MIME, true) => "{$nama}: hanya JPG, PNG, WebP, atau HEIC. Jika HEIC gagal diproses, ubah dulu ke JPG.",
             default => null,
         };
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\DaftarController;
 use App\Http\Controllers\GaleriController;
 use App\Http\Controllers\KlasemenController;
 use App\Http\Controllers\MadrasahController;
+use App\Http\Controllers\SuratTugasController;
 use App\Http\Middleware\TetapkanEdisi;
 use Illuminate\Support\Facades\Route;
 
@@ -35,3 +36,8 @@ Route::middleware(TetapkanEdisi::class)->group(function () {
     Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
     Route::get('/galeri/{album:slug}', [GaleriController::class, 'show'])->name('galeri.show');
 });
+
+// Admin: lihat surat tugas pendaftaran di browser (izin dicek di controller).
+Route::get('/admin/surat-tugas/{pendaftaran}', SuratTugasController::class)
+    ->middleware('auth')
+    ->name('admin.surat-tugas');

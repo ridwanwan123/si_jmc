@@ -127,7 +127,10 @@ class PendaftaranResource extends Resource
                         ->url(fn (Pendaftaran $record) => 'https://wa.me/62'.ltrim($record->guru_wa, '0'), shouldOpenInNewTab: true)
                         ->color('primary'),
                     TextEntry::make('surat_tugas_path')->label('Surat tugas')
-                        ->formatStateUsing(fn ($state) => $state ? 'Terlampir (PDF)' : null)
+                        ->formatStateUsing(fn ($state) => $state ? 'Lihat surat tugas (PDF)' : null)
+                        ->url(fn (Pendaftaran $record) => static::urlSurat($record), shouldOpenInNewTab: true)
+                        ->color('primary')
+                        ->icon(fn ($state) => $state ? Heroicon::OutlinedEye : null)
                         ->placeholder('Tidak ada'),
                 ]),
             Section::make(fn (Pendaftaran $record) => $record->lomba->tim() ? 'Anggota tim' : 'Peserta')
@@ -237,6 +240,7 @@ class PendaftaranResource extends Resource
         return [
             ActionGroup::make([
                 ViewAction::make()->url(fn (Pendaftaran $record) => static::getUrl('view', ['record' => $record])),
+                static::lihatSuratAction(),
                 static::verifikasiAction(),
                 static::tolakAction(),
             ])->tooltip('Aksi'),
@@ -311,6 +315,24 @@ class PendaftaranResource extends Resource
                 app(PendaftaranService::class)->tolak($record, $data['catatan']);
                 Notification::make()->title("{$record->nomor} ditolak")->danger()->send();
             });
+    }
+
+    /** URL untuk membuka surat tugas di tab baru, atau null jika tidak ada file. */
+    public static function urlSurat(Pendaftaran $record): ?string
+    {
+        return filled($record->surat_tugas_path)
+            ? route('admin.surat-tugas', $record)
+            : null;
+    }
+
+    public static function lihatSuratAction(): Action
+    {
+        return Action::make('lihatSurat')
+            ->label('Lihat surat tugas')
+            ->icon(Heroicon::OutlinedEye)
+            ->color('gray')
+            ->visible(fn (Pendaftaran $record) => filled($record->surat_tugas_path))
+            ->url(fn (Pendaftaran $record) => static::urlSurat($record), shouldOpenInNewTab: true);
     }
 
     public static function unduhSuratAction(): Action

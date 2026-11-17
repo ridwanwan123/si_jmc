@@ -23,6 +23,7 @@ class ViewPendaftaran extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            PendaftaranResource::lihatSuratAction(),
             PendaftaranResource::unduhSuratAction(),
             PendaftaranResource::verifikasiAction(),
             PendaftaranResource::tolakAction(),

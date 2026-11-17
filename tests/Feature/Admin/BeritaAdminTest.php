@@ -6,10 +6,15 @@ use App\Filament\Resources\Beritas\Pages\CreateBerita;
 use App\Filament\Resources\Beritas\Pages\EditBerita;
 use App\Filament\Resources\Beritas\Pages\ListBeritas;
 use App\Models\Berita;
+use App\Models\Cabor;
 use App\Models\Edisi;
 use App\Models\User;
+use App\Services\BeritaService;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -27,7 +32,7 @@ it('membuka daftar, form buat, dan form ubah berita', function () {
 });
 
 it('menolak admin cabor membuka berita', function () {
-    $this->actingAs(User::factory()->create(['role' => Role::AdminCabor, 'cabor_id' => \App\Models\Cabor::factory()->create()->id]));
+    $this->actingAs(User::factory()->create(['role' => Role::AdminCabor, 'cabor_id' => Cabor::factory()->create()->id]));
 
     $this->get('/admin/berita')->assertForbidden();
 });
@@ -113,4 +118,23 @@ it('memfilter berita berdasarkan status', function () {
         ->filterTable('status', 'draf')
         ->assertCanSeeTableRecords([$draf])
         ->assertCanNotSeeTableRecords([$terbit]);
+});
+
+it('mengompres gambar isi berita ke WebP maks 1200px dan menolak format yang tidak bisa diproses', function () {
+    Storage::fake('public');
+    $service = app(BeritaService::class);
+
+    $path = $service->simpanGambarIsi(UploadedFile::fake()->image('isi.png', 3000, 2000));
+
+    expect($path)->toStartWith('berita/isi/')->toEndWith('.webp')
+        ->and(getimagesizefromstring(Storage::disk('public')->get($path))[0])->toBe(1200);
+
+    $heic = UploadedFile::fake()->createWithContent('foto.heic', "\x00\x00\x00\x18ftypheic\x00\x00\x00\x00heicmif1");
+    expect(fn () => $service->simpanGambarIsi($heic))->toThrow(ValidationException::class);
+});
+
+it('membatasi sampul 5 MB dan gambar isi berita 2 MB', function () {
+    Livewire::test(CreateBerita::class)
+        ->assertFormFieldExists('sampul', fn (FileUpload $f) => $f->getMaxSize() === 5120)
+        ->assertFormFieldExists('isi', fn (RichEditor $f) => $f->getFileAttachmentsMaxSize() === 2048);
 });

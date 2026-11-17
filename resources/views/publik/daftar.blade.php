@@ -240,6 +240,7 @@
                     <div class="border-b border-garis-halus px-5 py-4">
                         <div class="text-[17px] font-extrabold">Guru pendamping</div>
                         <p class="mt-0.5 text-sm text-teks-2">Kami hubungi lewat WhatsApp untuk konfirmasi dan jadwal tanding.</p>
+                        <p x-show="tim()" x-cloak class="mt-1 text-sm text-teks-2">Untuk lomba beregu, cukup unggah <strong>satu surat tugas gabungan</strong> yang memuat nama seluruh anggota tim (dilampirkan sekaligus), tidak perlu satu surat per peserta.</p>
                     </div>
                     <div class="grid gap-4 px-5 py-5 sm:grid-cols-2">
                         <label class="block">
@@ -255,7 +256,7 @@
                                    class="min-h-12 w-full rounded-lg border bg-white px-3.5 text-base outline-none focus:border-ink">
                         </label>
                         <label class="block sm:col-span-2">
-                            <span class="mb-1.5 block text-[15px] font-semibold">Surat tugas dari madrasah <span class="font-normal text-muted">(PDF, maks 2 MB)</span></span>
+                            <span class="mb-1.5 block text-[15px] font-semibold">Surat tugas dari madrasah <span class="font-normal text-muted">(PDF, maks 500 KB)</span></span>
                             <span class="block rounded-lg border border-dashed px-3.5 py-3"
                                   :class="cobaLanjut && !guru.surat ? 'border-red-600' : 'border-pill-line bg-[#FAFAF7]'">
                                 <input type="file" x-ref="surat" accept="application/pdf,.pdf" @change="pilihSurat($event)"

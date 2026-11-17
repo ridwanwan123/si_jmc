@@ -116,6 +116,11 @@ class BeritaResource extends Resource
                                 ->fileAttachmentsDisk('public')
                                 ->fileAttachmentsDirectory('berita/isi')
                                 ->fileAttachmentsVisibility('public')
+                                // Gambar di isi berita: maks 2 MB, dikompres ke WebP maks 1200px.
+                                ->fileAttachmentsAcceptedFileTypes(BeritaService::MIME_PILIH)
+                                ->fileAttachmentsMaxSize(BeritaService::MAKS_GAMBAR_ISI_KB)
+                                ->saveUploadedFileAttachmentUsing(fn (TemporaryUploadedFile $file) => app(BeritaService::class)->simpanGambarIsi($file))
+                                ->helperText('Gambar di isi berita: JPG/PNG/WebP/HEIC, maks 2 MB, otomatis dikompres.')
                                 ->extraInputAttributes(['style' => 'min-height: 22rem']),
                         ]),
 
@@ -157,13 +162,13 @@ class BeritaResource extends Resource
                                     FileUpload::make('sampul')
                                         ->hiddenLabel()
                                         ->image()
-                                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                                        ->maxSize(10240)
+                                        ->acceptedFileTypes(BeritaService::MIME_PILIH)
+                                        ->maxSize(BeritaService::MAKS_SAMPUL_KB)
                                         ->disk('public')
                                         ->imageEditor()
                                         // Dikompres ke WebP maks 1600px.
                                         ->saveUploadedFileUsing(fn (TemporaryUploadedFile $file) => app(BeritaService::class)->simpanSampul($file))
-                                        ->helperText('JPG/PNG/WebP, otomatis dikompres.'),
+                                        ->helperText('JPG/PNG/WebP/HEIC, maks 5 MB, otomatis dikompres.'),
                                     TextInput::make('keterangan_sampul')
                                         ->label('Keterangan foto')
                                         ->maxLength(255),

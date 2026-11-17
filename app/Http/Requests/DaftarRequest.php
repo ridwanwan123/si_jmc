@@ -27,7 +27,7 @@ class DaftarRequest extends FormRequest
             'peserta.*.nisn' => ['required', 'regex:/^(\d{10}|\d{16})$/'],
             'guru_nama' => ['required', 'string', 'min:3', 'max:100'],
             'guru_wa' => ['required', 'string', 'regex:/^(\+62|62|0)8[\d\s-]{7,15}$/'],
-            'surat_tugas' => ['required', 'file', 'mimes:pdf', 'max:2048'],
+            'surat_tugas' => ['required', 'file', 'mimes:pdf', 'max:500'],
             'setuju' => ['accepted'],
         ];
     }
@@ -47,7 +47,7 @@ class DaftarRequest extends FormRequest
             'guru_wa.regex' => 'Nomor WhatsApp tidak valid (contoh 081234567890).',
             'surat_tugas.required' => 'Unggah surat tugas dari madrasah (PDF).',
             'surat_tugas.mimes' => 'Surat tugas harus berupa file PDF.',
-            'surat_tugas.max' => 'Ukuran surat tugas maksimal 2 MB.',
+            'surat_tugas.max' => 'Ukuran surat tugas maksimal 500 KB.',
             'setuju.accepted' => 'Centang pernyataan terlebih dahulu.',
         ];
     }

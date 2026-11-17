@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Tamu yang membuka halaman ber-auth (mis. surat tugas) diarahkan ke login admin Filament.
+        $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -20,7 +20,7 @@ class EdisiSeeder extends Seeder
             'tanggal_selesai' => '2026-12-31',
             'lokasi' => 'Jakarta',
             'pendaftaran_buka' => '2026-11-09',
-            'pendaftaran_tutup' => '2026-11-16',
+            'pendaftaran_tutup' => '2026-11-30',
             'is_aktif' => true,
         ]);
 
